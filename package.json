@@ -1,11 +1,5 @@
 {
   "name": "pureandcore",
   "version": "1.0.0",
-  "description": "맑음 air care - 새집증후군 전문 시공",
-  "scripts": {
-    "dev": "npx serve .",
-    "build": "echo 'No build required for static site'"
-  },
-  "author": "",
-  "license": "ISC"
+  "description": "맑음 air care - 새집증후군 전문 시공"
 }
