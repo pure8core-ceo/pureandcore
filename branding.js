@@ -43,6 +43,22 @@
     setText('.footer__biz-name', s.biz_name);
     setText('.footer__biz-ceo', s.biz_ceo);
     setText('.footer__biz-reg', s.biz_reg_no);
+
+    // 상담 문의 (전화 / 운영시간 / 카카오 링크)
+    setText('.footer__phone', s.contact_phone);
+    setText('.footer__hours', s.contact_hours);
+    var kakao = (s.kakao_url || '').trim();
+    document.querySelectorAll('.footer__kakao').forEach(function (a) {
+      if (kakao) {
+        a.href = kakao;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+      } else {
+        a.href = '#contact';
+        a.removeAttribute('target');
+        a.removeAttribute('rel');
+      }
+    });
     if (logo) {
       document.querySelectorAll('.brand').forEach(function (brand) {
         var dot = brand.querySelector('.brand__dot');

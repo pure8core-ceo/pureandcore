@@ -27,7 +27,8 @@
   const charts = {};
   const SETTINGS_DEFAULTS = {
     brand_name: '맑음', brand_sub: 'air care', logo_url: '',
-    biz_name: '(주)맑음 에어케어', biz_ceo: '000', biz_reg_no: '000-00-00000'
+    biz_name: '(주)맑음 에어케어', biz_ceo: '000', biz_reg_no: '000-00-00000',
+    contact_phone: '1600-0000', contact_hours: '평일 09:00 – 19:00', kakao_url: ''
   };
   let settings = { ...SETTINGS_DEFAULTS };
   let pendingLogo = ''; // 설정 폼에서 편집 중인 로고(data URL)
@@ -562,6 +563,14 @@
       $('#set-biz-ceo').value = settings.biz_ceo || '';
       $('#set-biz-reg').value = settings.biz_reg_no || '';
     }
+
+    // 상담 문의 폼
+    const cPhone = $('#set-contact-phone');
+    if (cPhone) {
+      cPhone.value = settings.contact_phone || '';
+      $('#set-contact-hours').value = settings.contact_hours || '';
+      $('#set-kakao-url').value = settings.kakao_url || '';
+    }
   }
 
   function updateSettingsPreview() {
@@ -677,6 +686,38 @@
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
 
+  async function saveContactInfo() {
+    const btn = $('#set-contact-save');
+    const savedEl = $('#set-contact-saved');
+    const errEl = $('#set-contact-error');
+    savedEl.hidden = true; errEl.hidden = true;
+
+    const kakao = ($('#set-kakao-url').value || '').trim();
+    if (kakao && !/^https?:\/\//i.test(kakao)) {
+      errEl.textContent = '카카오 URL은 http:// 또는 https:// 로 시작해야 합니다.';
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = '저장 중…';
+    const rows = [
+      { key: 'contact_phone', value: ($('#set-contact-phone').value || '').trim() },
+      { key: 'contact_hours', value: ($('#set-contact-hours').value || '').trim() },
+      { key: 'kakao_url', value: kakao }
+    ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+
+    const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) {
+      errEl.textContent = '저장 실패: ' + error.message;
+      errEl.hidden = false;
+      return;
+    }
+    rows.forEach((r) => { settings[r.key] = r.value; });
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
   // =========================================================
   //  CSV 내보내기
   // =========================================================
@@ -731,6 +772,7 @@
     $('#set-logo-clear').addEventListener('click', () => { pendingLogo = ''; updateSettingsPreview(); });
     $('#set-save').addEventListener('click', saveSettings);
     $('#set-biz-save').addEventListener('click', saveBizInfo);
+    $('#set-contact-save').addEventListener('click', saveContactInfo);
     $('#drawer-backdrop').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
   }

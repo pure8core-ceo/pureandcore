@@ -37,5 +37,8 @@ insert into public.site_settings (key, value) values
   ('logo_url',   ''),
   ('biz_name',   '(주)맑음 에어케어'),
   ('biz_ceo',    '000'),
-  ('biz_reg_no', '000-00-00000')
+  ('biz_reg_no', '000-00-00000'),
+  ('contact_phone', '1600-0000'),
+  ('contact_hours', '평일 09:00 – 19:00'),
+  ('kakao_url',     '')
 on conflict (key) do nothing;
