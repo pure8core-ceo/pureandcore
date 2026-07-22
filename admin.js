@@ -43,6 +43,15 @@
     { title: '재측정 & 인증', desc: '시공 후 수치를 다시 측정하고 결과 리포트를 발급해 드립니다.' },
     { title: '12개월 A/S', desc: '시공 후에도 재점검과 사후 관리로 깨끗한 공기를 유지합니다.' }
   ];
+  const METHOD_DEFAULTS = {
+    eyebrow: 'CORE METHOD',
+    title: '광촉매 + 베이크아웃, 이중 시공',
+    items: [
+      { term: '광촉매 코팅', desc: '빛과 반응해 유해물질을 물과 이산화탄소로 지속 분해합니다.' },
+      { term: '베이크아웃', desc: '실내를 고온으로 가열해 자재 속 잔여 물질을 한 번에 배출합니다.' },
+      { term: '친환경 인증 자재', desc: '무독성·무취 인증 자재만 사용해 아이 방도 안심입니다.' }
+    ]
+  };
   const CASE_DEFAULTS = [
     { title: '01 · 방문 정밀 측정', sub: '공인 측정기로 실내 오염도를 진단합니다.', photo: '' },
     { title: '02 · 이중 시공', sub: '광촉매 코팅 + 고온 베이크아웃 진행.', photo: '' },
@@ -818,6 +827,7 @@
   function renderContent() {
     renderHeroFields();
     renderProcessFields();
+    renderMethodFields();
     renderCaseFields();
     renderPricingFields();
   }
@@ -919,6 +929,67 @@
     btn.disabled = false; btn.textContent = '저장';
     if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
     settings.process_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // ---------- 핵심 공법(CORE METHOD) ----------
+  function getMethod() {
+    let o = null;
+    try { const v = JSON.parse(settings.method_json || 'null'); if (v && typeof v === 'object' && !Array.isArray(v)) o = v; } catch (e) { /* noop */ }
+    o = o || {};
+    return {
+      eyebrow: o.eyebrow != null ? o.eyebrow : METHOD_DEFAULTS.eyebrow,
+      title: o.title != null ? o.title : METHOD_DEFAULTS.title,
+      items: METHOD_DEFAULTS.items.map((d, i) => {
+        const s = (Array.isArray(o.items) && o.items[i]) ? o.items[i] : {};
+        return { term: s.term != null ? s.term : d.term, desc: s.desc != null ? s.desc : d.desc };
+      })
+    };
+  }
+
+  function renderMethodFields() {
+    const host = $('#method-fields');
+    if (!host) return;
+    const m = getMethod();
+    $('#method-eyebrow').value = m.eyebrow || '';
+    $('#method-title').value = m.title || '';
+    host.innerHTML = m.items.map((it, i) => `
+      <div class="content-item">
+        <div class="content-item__label">ITEM 0${i + 1}</div>
+        <div class="set-field">
+          <label for="method-term-${i}">용어 <span class="set-hint">굵게 표시됩니다</span></label>
+          <input id="method-term-${i}" class="set-input" maxlength="30" value="${esc(it.term)}">
+        </div>
+        <div class="set-field">
+          <label for="method-desc-${i}">설명</label>
+          <textarea id="method-desc-${i}" class="set-input rv-textarea" maxlength="200" rows="2">${esc(it.desc)}</textarea>
+        </div>
+      </div>`).join('');
+  }
+
+  async function saveMethod() {
+    const btn = $('#method-save');
+    const savedEl = $('#method-saved');
+    const errEl = $('#method-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const items = METHOD_DEFAULTS.items.map((_, i) => ({
+      term: ($('#method-term-' + i).value || '').trim(),
+      desc: ($('#method-desc-' + i).value || '').trim()
+    }));
+    const method = {
+      eyebrow: ($('#method-eyebrow').value || '').trim(),
+      title: ($('#method-title').value || '').trim(),
+      items
+    };
+    const value = JSON.stringify(method);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'method_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.method_json = value;
     savedEl.hidden = false;
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
@@ -1344,6 +1415,7 @@
     $('#hero-bg-file').addEventListener('change', handleHeroBg);
     $('#hero-bg-clear').addEventListener('click', () => { pendingHeroBg = ''; renderHeroBgPreview(); });
     $('#process-save').addEventListener('click', saveProcess);
+    $('#method-save').addEventListener('click', saveMethod);
     $('#cases-save').addEventListener('click', saveCases);
     $('#pricing-save').addEventListener('click', savePricing);
     // 리뷰 관리

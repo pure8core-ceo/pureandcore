@@ -121,6 +121,28 @@
     }
   }
 
+  // 핵심 공법(CORE METHOD) 카드: eyebrow / 제목 / 3개 항목(용어 + 설명)
+  function applyMethod(str) {
+    var m = parseObj(str);
+    if (!m) return;
+    setText('.method__eyebrow', m.eyebrow);
+    setText('.method__title', m.title);
+    if (Array.isArray(m.items)) {
+      var rows = document.querySelectorAll('.method__list .method__item');
+      m.items.forEach(function (it, i) {
+        var row = rows[i];
+        if (!row || !it) return;
+        var p = row.querySelector('p');
+        if (!p) return;
+        var term = (it.term || '').trim();
+        var desc = (it.desc || '').trim();
+        if (!term && !desc) return;
+        p.innerHTML = (term ? '<b>' + esc(term) + '</b>' : '') +
+          (term && desc ? ' — ' : '') + (desc ? esc(desc) : '');
+      });
+    }
+  }
+
   // 시공 현장(CASE) 갤러리: 사진/제목/설명
   function applyCases(str) {
     var items = parseJSON(str);
@@ -195,6 +217,7 @@
     if (s.hero_json) applyHero(s.hero_json);
     if (s.pricing_json) applyPricing(s.pricing_json);
     if (s.process_json) applyProcess(s.process_json);
+    if (s.method_json) applyMethod(s.method_json);
     if (s.cases_json) applyCases(s.cases_json);
 
     if (logo) {
