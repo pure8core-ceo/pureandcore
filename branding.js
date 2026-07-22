@@ -285,12 +285,15 @@
     if (Array.isArray(n.links)) {
       var navLinks = document.querySelectorAll('.nav__links a');
       var footLinks = document.querySelectorAll('.footer__cols .footer__col:first-child a');
-      n.links.forEach(function (t, i) {
-        var txt = String(t == null ? '' : t).trim();
-        if (!txt) return;
-        if (navLinks[i]) navLinks[i].textContent = txt;
-        if (footLinks[i]) footLinks[i].textContent = txt;
-      });
+      // 저장된 링크 수가 현재 메뉴 수와 다르면(구버전 저장 등) 정적 HTML 유지
+      if (n.links.length === navLinks.length) {
+        n.links.forEach(function (t, i) {
+          var txt = String(t == null ? '' : t).trim();
+          if (!txt) return;
+          if (navLinks[i]) navLinks[i].textContent = txt;
+          if (footLinks[i]) footLinks[i].textContent = txt;
+        });
+      }
     }
     setText('.nav__right .btn--primary', n.cta);
   }

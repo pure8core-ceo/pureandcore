@@ -100,9 +100,10 @@
     desc: '신청 후 24시간 이내에 담당 매니저가 연락드립니다. 측정은 무료, 부담 없이 상담부터 시작하세요.',
     perks: ['방문 측정 완전 무료', '시공 전후 결과 리포트 제공', '12개월 A/S 무상 보증']
   };
-  // 네비게이션 메뉴(4개 링크) + CTA 버튼 문구 · 링크 이동 위치(href)는 고정
+  // 네비게이션 메뉴(6개 링크) + CTA 버튼 문구 · 링크 이동 위치(href)는 고정
+  // 순서: #problem · #process · #gallery · #reviews · #pricing · #faq
   const NAV_DEFAULTS = {
-    links: ['새집증후군', '시공과정', '시공후기', '요금안내'],
+    links: ['새집증후군', '시공과정', '시공현장', '시공후기', '요금안내', 'FAQ'],
     cta: '무료 측정 신청'
   };
   // 새집증후군(PROBLEM) 섹션
@@ -738,10 +739,7 @@
     const nav1 = $('#set-nav-1');
     if (nav1) {
       const n = getNav();
-      $('#set-nav-1').value = n.links[0] || '';
-      $('#set-nav-2').value = n.links[1] || '';
-      $('#set-nav-3').value = n.links[2] || '';
-      $('#set-nav-4').value = n.links[3] || '';
+      n.links.forEach((v, i) => { const el = $('#set-nav-' + (i + 1)); if (el) el.value = v || ''; });
       $('#set-nav-cta').value = n.cta || '';
     }
   }
@@ -979,8 +977,8 @@
     savedEl.hidden = true; errEl.hidden = true;
     btn.disabled = true; btn.textContent = '저장 중…';
 
-    const links = ['#set-nav-1', '#set-nav-2', '#set-nav-3', '#set-nav-4']
-      .map((sel, i) => ($(sel).value || '').trim() || NAV_DEFAULTS.links[i]);
+    const links = NAV_DEFAULTS.links
+      .map((d, i) => (($('#set-nav-' + (i + 1)) || {}).value || '').trim() || d);
     const nav = { links, cta: ($('#set-nav-cta').value || '').trim() || NAV_DEFAULTS.cta };
     const value = JSON.stringify(nav);
     const { error } = await client.from('site_settings')
