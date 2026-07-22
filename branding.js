@@ -121,6 +121,23 @@
     }
   }
 
+  // 통계 밴드(TRUST STATS): 숫자 / 단위 / 설명 (4개)
+  function applyStats(str) {
+    var items = parseJSON(str);
+    if (!items) return;
+    var cards = document.querySelectorAll('.stats .stat');
+    items.forEach(function (it, i) {
+      var card = cards[i];
+      if (!card || !it) return;
+      var numEl = card.querySelector('.stat__num');
+      var labelEl = card.querySelector('.stat__label');
+      if (numEl && it.num != null && String(it.num).trim() !== '') {
+        numEl.innerHTML = esc(it.num) + '<small>' + esc(it.unit || '') + '</small>';
+      }
+      if (labelEl && it.label) labelEl.textContent = it.label;
+    });
+  }
+
   // 핵심 공법(CORE METHOD) 카드: eyebrow / 제목 / 3개 항목(용어 + 설명)
   function applyMethod(str) {
     var m = parseObj(str);
@@ -213,8 +230,9 @@
     setText('.rating-score__count', s.review_count);
     setText('.hero__badge-count', s.hero_review_count);
 
-    // 메인(히어로) / 요금 안내 / 시공 과정 / 시공 현장
+    // 메인(히어로) / 통계 / 요금 안내 / 시공 과정 / 시공 현장
     if (s.hero_json) applyHero(s.hero_json);
+    if (s.stats_json) applyStats(s.stats_json);
     if (s.pricing_json) applyPricing(s.pricing_json);
     if (s.process_json) applyProcess(s.process_json);
     if (s.method_json) applyMethod(s.method_json);

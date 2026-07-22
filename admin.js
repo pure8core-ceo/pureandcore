@@ -43,6 +43,12 @@
     { title: '재측정 & 인증', desc: '시공 후 수치를 다시 측정하고 결과 리포트를 발급해 드립니다.' },
     { title: '12개월 A/S', desc: '시공 후에도 재점검과 사후 관리로 깨끗한 공기를 유지합니다.' }
   ];
+  const STATS_DEFAULTS = [
+    { num: '12,400', unit: '세대', label: '누적 시공' },
+    { num: '87', unit: '% ↓', label: '유해물질 평균 저감' },
+    { num: '98', unit: '%', label: '재의뢰·추천율' },
+    { num: '12', unit: '개월', label: 'A/S 무상 보증' }
+  ];
   const METHOD_DEFAULTS = {
     eyebrow: 'CORE METHOD',
     title: '광촉매 + 베이크아웃, 이중 시공',
@@ -826,6 +832,7 @@
 
   function renderContent() {
     renderHeroFields();
+    renderStatsFields();
     renderProcessFields();
     renderMethodFields();
     renderCaseFields();
@@ -1092,6 +1099,66 @@
     btn.disabled = false; btn.textContent = '저장';
     if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
     settings.hero_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // ---------- 통계 밴드(TRUST STATS) ----------
+  function getStats() {
+    let arr = null;
+    try { const v = JSON.parse(settings.stats_json || 'null'); if (Array.isArray(v)) arr = v; } catch (e) { /* noop */ }
+    return STATS_DEFAULTS.map((d, i) => {
+      const s = (arr && arr[i]) ? arr[i] : {};
+      return {
+        num: s.num != null ? s.num : d.num,
+        unit: s.unit != null ? s.unit : d.unit,
+        label: s.label != null ? s.label : d.label
+      };
+    });
+  }
+
+  function renderStatsFields() {
+    const host = $('#stats-fields');
+    if (!host) return;
+    const stats = getStats();
+    host.innerHTML = stats.map((st, i) => `
+      <div class="content-item">
+        <div class="content-item__label">STAT 0${i + 1}</div>
+        <div class="rv-grid">
+          <div class="set-field">
+            <label for="stat-num-${i}">숫자</label>
+            <input id="stat-num-${i}" class="set-input" maxlength="20" value="${esc(st.num)}">
+          </div>
+          <div class="set-field">
+            <label for="stat-unit-${i}">단위 <span class="set-hint">숫자 옆 작은 글씨</span></label>
+            <input id="stat-unit-${i}" class="set-input" maxlength="20" value="${esc(st.unit || '')}">
+          </div>
+        </div>
+        <div class="set-field">
+          <label for="stat-label-${i}">설명</label>
+          <input id="stat-label-${i}" class="set-input" maxlength="30" value="${esc(st.label)}">
+        </div>
+      </div>`).join('');
+  }
+
+  async function saveStats() {
+    const btn = $('#stats-save');
+    const savedEl = $('#stats-saved');
+    const errEl = $('#stats-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const stats = STATS_DEFAULTS.map((_, i) => ({
+      num: ($('#stat-num-' + i).value || '').trim(),
+      unit: ($('#stat-unit-' + i).value || '').trim(),
+      label: ($('#stat-label-' + i).value || '').trim()
+    }));
+    const value = JSON.stringify(stats);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'stats_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.stats_json = value;
     savedEl.hidden = false;
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
@@ -1414,6 +1481,7 @@
     $('#hero-save').addEventListener('click', saveHero);
     $('#hero-bg-file').addEventListener('change', handleHeroBg);
     $('#hero-bg-clear').addEventListener('click', () => { pendingHeroBg = ''; renderHeroBgPreview(); });
+    $('#stats-save').addEventListener('click', saveStats);
     $('#process-save').addEventListener('click', saveProcess);
     $('#method-save').addEventListener('click', saveMethod);
     $('#cases-save').addEventListener('click', saveCases);
