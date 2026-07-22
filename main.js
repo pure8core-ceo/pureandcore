@@ -167,13 +167,52 @@
     const reset = document.getElementById('form-reset');
     if (!wrap || !form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!form.checkValidity()) {
         form.reportValidity();
         return;
       }
-      wrap.classList.add('is-submitted');
+
+      const submitBtn = form.querySelector('.form__submit');
+      const originalText = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '전송 중…';
+      }
+
+      // 필드명 충돌(form.name 등)을 피하려고 id 로 직접 읽는다
+      const val = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+      };
+      const payload = {
+        name: val('f-name'),
+        phone: val('f-phone'),
+        area: val('f-area'),     // supabase-client 에서 size 로 매핑
+        movein: val('f-date')    // supabase-client 에서 desired_date 로 매핑
+      };
+
+      let ok = false;
+      try {
+        if (window.consultationAPI) {
+          const result = await window.consultationAPI.save(payload);
+          ok = !!(result && result.success);
+        }
+      } catch (err) {
+        console.error('상담 신청 저장 실패:', err);
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+
+      if (ok) {
+        wrap.classList.add('is-submitted');
+      } else {
+        alert('신청 중 오류가 발생했어요. 잠시 후 다시 시도하시거나 전화로 문의해 주세요.');
+      }
     });
     reset.addEventListener('click', () => {
       form.reset();

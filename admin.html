@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>맑음 air care · 관리자</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<!-- ===== 로그인 ===== -->
+<div id="login-view" class="login" hidden>
+  <form class="login__card" id="login-form">
+    <div class="login__brand">
+      <span class="login__dot"></span> 맑음 <span class="login__sub">관리자</span>
+    </div>
+    <p class="login__desc">상담 문의와 방문 트래픽을 관리합니다.</p>
+    <label class="login__label" for="login-email">이메일</label>
+    <input class="login__input" id="login-email" type="email" autocomplete="username" required placeholder="admin@example.com">
+    <label class="login__label" for="login-password">비밀번호</label>
+    <input class="login__input" id="login-password" type="password" autocomplete="current-password" required placeholder="••••••••">
+    <button class="login__btn" type="submit">로그인</button>
+    <p class="login__error" id="login-error" hidden></p>
+  </form>
+</div>
+
+<!-- ===== 로딩 ===== -->
+<div id="loading-view" class="loading">
+  <div class="loading__spinner"></div>
+  <p>불러오는 중…</p>
+</div>
+
+<!-- ===== 대시보드 ===== -->
+<div id="app-view" class="app" hidden>
+  <header class="topbar">
+    <div class="topbar__brand"><span class="topbar__dot"></span> 맑음 <span class="topbar__sub">관리자</span></div>
+    <nav class="tabs">
+      <button class="tab is-active" data-tab="dashboard">대시보드</button>
+      <button class="tab" data-tab="consultations">상담 문의</button>
+      <button class="tab" data-tab="traffic">트래픽</button>
+    </nav>
+    <div class="topbar__right">
+      <button class="btn-ghost" id="refresh-btn" title="새로고침">↻ 새로고침</button>
+      <span class="topbar__user" id="user-email"></span>
+      <button class="btn-ghost" id="logout-btn">로그아웃</button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ===== 대시보드 탭 ===== -->
+    <section class="panel" data-panel="dashboard">
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="card">
+        <div class="card__head">
+          <h3>최근 30일 방문 추이</h3>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card__head"><h3>유입 경로 (UTM Source)</h3></div>
+          <div class="chart-wrap chart-wrap--sm"><canvas id="chart-source"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card__head"><h3>기기 유형</h3></div>
+          <div class="chart-wrap chart-wrap--sm"><canvas id="chart-device"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__head"><h3>최근 상담 신청</h3>
+          <button class="link-btn" data-goto="consultations">전체 보기 →</button>
+        </div>
+        <div id="recent-consults"></div>
+      </div>
+    </section>
+
+    <!-- ===== 상담 문의 탭 ===== -->
+    <section class="panel" data-panel="consultations" hidden>
+      <div class="toolbar">
+        <div class="toolbar__filters" id="status-filters"></div>
+        <div class="toolbar__right">
+          <input class="search" id="consult-search" type="search" placeholder="이름·연락처 검색">
+          <button class="btn-ghost" id="export-btn">CSV 내보내기</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table" id="consult-table">
+            <thead>
+              <tr>
+                <th>접수일</th><th>이름</th><th>연락처</th><th>평형/지역</th>
+                <th>입주예정</th><th>유입</th><th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="consult-tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="consult-empty" hidden>표시할 상담 신청이 없습니다.</div>
+      </div>
+    </section>
+
+    <!-- ===== 트래픽 탭 ===== -->
+    <section class="panel" data-panel="traffic" hidden>
+      <div class="kpi-grid" id="traffic-kpi"></div>
+      <div class="card">
+        <div class="card__head"><h3>일별 방문수 / 순 방문자</h3></div>
+        <div class="chart-wrap"><canvas id="chart-traffic-trend"></canvas></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card__head"><h3>유입 경로별 방문</h3></div>
+          <div class="table-wrap">
+            <table class="table"><thead><tr><th>Source</th><th>Medium</th><th>방문수</th></tr></thead>
+              <tbody id="source-tbody"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__head"><h3>페이지별 방문</h3></div>
+          <div class="table-wrap">
+            <table class="table"><thead><tr><th>경로</th><th>방문수</th></tr></thead>
+              <tbody id="path-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== 상담 상세 슬라이드 패널 ===== -->
+<div class="drawer" id="drawer" hidden>
+  <div class="drawer__backdrop" id="drawer-backdrop"></div>
+  <aside class="drawer__panel" id="drawer-panel"></aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

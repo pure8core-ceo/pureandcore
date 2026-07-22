@@ -45,10 +45,11 @@ async function saveConsultation(data) {
     };
 
     // Supabase에 저장
-    const { data: result, error } = await supabase
+    // 주의: anon 권한으로 .select()를 붙이면 SELECT RLS(인증 사용자만)에 걸리므로
+    //       반환값 없이 INSERT만 수행한다.
+    const { error } = await supabase
       .from('consultations')
-      .insert([consultationData])
-      .select();
+      .insert([consultationData]);
 
     if (error) {
       console.error('Supabase error:', error);
@@ -56,12 +57,9 @@ async function saveConsultation(data) {
     }
 
     // 성공시 알림 (옵션: Webhook 호출)
-    if (result && result[0]) {
-      // 알림 전송 (별도 구현 필요)
-      sendNotification(result[0]);
-    }
+    sendNotification(consultationData);
 
-    return { success: true, data: result };
+    return { success: true };
   } catch (error) {
     console.error('Error saving consultation:', error);
     return { success: false, error: error.message };
@@ -89,5 +87,7 @@ async function sendNotification(consultation) {
 // 전역 객체로 내보내기
 window.consultationAPI = {
   init: initSupabase,
-  save: saveConsultation
+  save: saveConsultation,
+  // 초기화된 클라이언트 재사용 (analytics.js 등에서 사용)
+  getClient: () => supabase || initSupabase()
 };
