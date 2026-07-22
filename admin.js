@@ -17,6 +17,7 @@
   };
   const STATUS_ORDER = ['NEW', 'CONTACTED', 'BOOKED', 'DONE', 'CANCELLED'];
   const PALETTE = ['#2E9BD6', '#6FB48B', '#E8A13C', '#9B87D4', '#E0787D', '#5FBFC9', '#A7B0B8'];
+  const BUCKET = 'site-assets'; // 이미지 저장 버킷 (Supabase Storage)
 
   // ---------- 전역 상태 ----------
   let client = null;
@@ -661,9 +662,9 @@
       : '<span class="logo-preview__empty">로고 없음</span>';
   }
 
-  // 이미지 파일 → 리사이즈된 data URL
-  //  · 로고: PNG(투명 배경 유지) / 리뷰 사진: JPEG(용량 절감)
-  function fileToLogoDataURL(file, maxDim = 256, mime = 'image/png', quality = 0.9) {
+  // 이미지 파일 → 캔버스 리사이즈 → Blob
+  //  · 로고: PNG(투명 배경 유지) / 사진: JPEG(용량 절감)
+  function fileToResizedBlob(file, maxDim = 256, mime = 'image/png', quality = 0.9) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
@@ -680,12 +681,29 @@
           const ctx = canvas.getContext('2d');
           if (mime === 'image/jpeg') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height); }
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL(mime, quality));
+          canvas.toBlob((blob) => { blob ? resolve(blob) : reject(new Error('이미지 변환에 실패했습니다.')); }, mime, quality);
         };
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  // 이미지 리사이즈 후 Storage 업로드 → 공개 URL 반환
+  async function uploadImage(file, { folder, maxDim = 256, mime = 'image/png', quality = 0.9 }) {
+    const blob = await fileToResizedBlob(file, maxDim, mime, quality);
+    const ext = mime === 'image/png' ? 'png' : 'jpg';
+    const path = `${folder}/${Date.now()}-${Math.floor(Math.random() * 1e6)}.${ext}`;
+    const up = await client.storage.from(BUCKET).upload(path, blob, { contentType: mime, cacheControl: '31536000', upsert: true });
+    if (up.error) {
+      const m = up.error.message || '';
+      if (/bucket/i.test(m) && /not|exist/i.test(m)) {
+        throw new Error('이미지 저장소(site-assets 버킷)가 없습니다. supabase-storage.sql 을 먼저 실행하세요.');
+      }
+      throw new Error('업로드 실패: ' + m);
+    }
+    const { data } = client.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl;
   }
 
   async function handleLogoFile(e) {
@@ -694,10 +712,14 @@
     const errEl = $('#set-error');
     errEl.hidden = true;
     if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    const box = $('#logo-preview');
+    const prev = box ? box.innerHTML : '';
+    if (box) box.innerHTML = '<span class="logo-preview__empty">업로드 중…</span>';
     try {
-      pendingLogo = await fileToLogoDataURL(file);
+      pendingLogo = await uploadImage(file, { folder: 'logo', maxDim: 256, mime: 'image/png', quality: 0.9 });
       updateSettingsPreview();
     } catch (err) {
+      if (box) box.innerHTML = prev;
       errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
       errEl.hidden = false;
     }
@@ -888,7 +910,7 @@
       </div>`).join('');
 
     // 미리보기 + 이벤트 바인딩 (동적 생성이라 매 렌더마다 연결)
-    cases.forEach((c, i) => {
+    cases.forEach((_c, i) => {
       renderCasePreview(i);
       $('#case-file-' + i).addEventListener('change', (e) => handleCasePhoto(i, e));
       $('#case-clear-' + i).addEventListener('click', () => { pendingCasePhotos[i] = ''; renderCasePreview(i); });
@@ -909,10 +931,13 @@
     const errEl = $('#cases-error');
     errEl.hidden = true;
     if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    const box = $('#case-preview-' + i);
+    if (box) box.innerHTML = '<span class="logo-preview__empty">업로드 중…</span>';
     try {
-      pendingCasePhotos[i] = await fileToLogoDataURL(file, 800, 'image/jpeg', 0.8);
+      pendingCasePhotos[i] = await uploadImage(file, { folder: 'cases', maxDim: 800, mime: 'image/jpeg', quality: 0.8 });
       renderCasePreview(i);
     } catch (err) {
+      renderCasePreview(i);
       errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
       errEl.hidden = false;
     }
@@ -1066,10 +1091,13 @@
     const errEl = $('#hero-error');
     errEl.hidden = true;
     if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    const box = $('#hero-bg-preview');
+    if (box) box.innerHTML = '<span class="logo-preview__empty">업로드 중…</span>';
     try {
-      pendingHeroBg = await fileToLogoDataURL(file, 1200, 'image/jpeg', 0.8);
+      pendingHeroBg = await uploadImage(file, { folder: 'hero', maxDim: 1200, mime: 'image/jpeg', quality: 0.8 });
       renderHeroBgPreview();
     } catch (err) {
+      renderHeroBgPreview();
       errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
       errEl.hidden = false;
     }
@@ -1355,10 +1383,13 @@
     const errEl = $('#rv-error');
     errEl.hidden = true;
     if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    const box = $('#rv-photo-preview');
+    if (box) box.innerHTML = '<span class="logo-preview__empty">업로드 중…</span>';
     try {
-      pendingReviewPhoto = await fileToLogoDataURL(file, 640, 'image/jpeg', 0.82);
+      pendingReviewPhoto = await uploadImage(file, { folder: 'reviews', maxDim: 640, mime: 'image/jpeg', quality: 0.82 });
       updateReviewPhotoPreview();
     } catch (err) {
+      updateReviewPhotoPreview();
       errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
       errEl.hidden = false;
     }
