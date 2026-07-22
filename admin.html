@@ -14,7 +14,7 @@
 <div id="login-view" class="login" hidden>
   <form class="login__card" id="login-form">
     <div class="login__brand">
-      <span class="login__dot"></span> 맑음 <span class="login__sub">관리자</span>
+      <span class="login__dot"></span> <span class="login__name">맑음</span> <span class="login__sub">관리자</span>
     </div>
     <p class="login__desc">상담 문의와 방문 트래픽을 관리합니다.</p>
     <label class="login__label" for="login-email">이메일</label>
@@ -35,11 +35,12 @@
 <!-- ===== 대시보드 ===== -->
 <div id="app-view" class="app" hidden>
   <header class="topbar">
-    <div class="topbar__brand"><span class="topbar__dot"></span> 맑음 <span class="topbar__sub">관리자</span></div>
+    <div class="topbar__brand"><span class="topbar__dot"></span> <span class="topbar__name">맑음</span> <span class="topbar__sub">관리자</span></div>
     <nav class="tabs">
       <button class="tab is-active" data-tab="dashboard">대시보드</button>
       <button class="tab" data-tab="consultations">상담 문의</button>
       <button class="tab" data-tab="traffic">트래픽</button>
+      <button class="tab" data-tab="settings">설정</button>
     </nav>
     <div class="topbar__right">
       <button class="btn-ghost" id="refresh-btn" title="새로고침">↻ 새로고침</button>
@@ -123,6 +124,55 @@
             <table class="table"><thead><tr><th>경로</th><th>방문수</th></tr></thead>
               <tbody id="path-tbody"></tbody></table>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 설정 탭 ===== -->
+    <section class="panel" data-panel="settings" hidden>
+      <div class="card">
+        <div class="card__head"><h3>브랜드 설정</h3></div>
+        <p class="set-desc">여기서 변경한 로고와 기업명은 방문자에게 보이는 홈페이지에 바로 반영됩니다.</p>
+
+        <div class="set-field">
+          <label for="set-brand-name">기업명</label>
+          <input id="set-brand-name" class="set-input" maxlength="40" placeholder="맑음">
+        </div>
+
+        <div class="set-field">
+          <label for="set-brand-sub">서브 텍스트 <span class="set-hint">기업명 옆 작은 글씨</span></label>
+          <input id="set-brand-sub" class="set-input" maxlength="40" placeholder="air care">
+        </div>
+
+        <div class="set-field">
+          <label>로고 이미지 <span class="set-hint">권장: 정사각형 PNG · 투명 배경</span></label>
+          <div class="logo-uploader">
+            <div class="logo-preview" id="logo-preview"><span class="logo-preview__empty">로고 없음</span></div>
+            <div class="logo-actions">
+              <label class="btn-file">이미지 선택
+                <input type="file" id="set-logo-file" accept="image/*" hidden>
+              </label>
+              <button type="button" class="btn-ghost" id="set-logo-clear">제거</button>
+              <p class="set-hint">파일을 고르면 자동으로 크기를 줄여 저장합니다. (파비콘에도 적용)</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="set-actions">
+          <button class="set-save" id="set-save">저장</button>
+          <span class="set-saved" id="set-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="set-error" hidden></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head"><h3>미리보기</h3></div>
+        <p class="set-desc">홈페이지 상단 네비게이션에 이렇게 표시됩니다.</p>
+        <div class="brand-preview" id="brand-preview">
+          <img class="brand-preview__logo" id="brand-preview-logo" alt="" hidden>
+          <span class="brand-preview__dot" id="brand-preview-dot"></span>
+          <span class="brand-preview__name" id="brand-preview-name">맑음</span>
+          <span class="brand-preview__sub" id="brand-preview-sub">air care</span>
         </div>
       </div>
     </section>

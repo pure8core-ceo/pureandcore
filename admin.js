@@ -25,6 +25,8 @@
   let activeStatus = 'ALL';
   let searchTerm = '';
   const charts = {};
+  let settings = { brand_name: '맑음', brand_sub: 'air care', logo_url: '' };
+  let pendingLogo = ''; // 설정 폼에서 편집 중인 로고(data URL)
 
   // ---------- 유틸 ----------
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -92,6 +94,9 @@
       return;
     }
     client = window.supabase.createClient(url, key);
+
+    // 브랜드 설정 로드 (공개 읽기 — 로그인 전에도 적용)
+    await loadSettings();
 
     // 기존 세션 확인
     const { data: { session } } = await client.auth.getSession();
@@ -175,6 +180,7 @@
     renderDashboard();
     renderConsultTab();
     renderTrafficTab();
+    renderSettings();
   }
 
   // ---------- 대시보드 ----------
@@ -481,6 +487,160 @@
   }
 
   // =========================================================
+  //  브랜드 설정 (로고 / 기업명)
+  // =========================================================
+  async function loadSettings() {
+    try {
+      const res = await client.from('site_settings').select('key, value');
+      if (!res.error && res.data) {
+        const map = {};
+        res.data.forEach((r) => { map[r.key] = r.value; });
+        settings = Object.assign({ brand_name: '맑음', brand_sub: 'air care', logo_url: '' }, map);
+      }
+    } catch (e) { /* 테이블 미생성 등 — 기본값 유지 */ }
+    applyBrandChrome();
+  }
+
+  // 관리자 화면(로그인/상단바/탭 타이틀/파비콘)에 브랜드 반영
+  function applyBrandChrome() {
+    const name = (settings.brand_name || '맑음').trim() || '맑음';
+    const logo = (settings.logo_url || '').trim();
+
+    $$('.login__name, .topbar__name').forEach((el) => { el.textContent = name; });
+    document.title = `${name} · 관리자`;
+
+    // 로그인 카드 로고
+    swapBrandDot($('.login__brand'), '.login__dot', 'login__logo', logo, name);
+    // 상단바 로고
+    swapBrandDot($('.topbar__brand'), '.topbar__dot', 'topbar__logo', logo, name);
+
+    if (logo) setFavicon(logo);
+  }
+
+  function swapBrandDot(host, dotSel, imgClass, logo, alt) {
+    if (!host) return;
+    const dot = host.querySelector(dotSel);
+    let img = host.querySelector('.' + imgClass);
+    if (logo) {
+      if (!img) {
+        img = document.createElement('img');
+        img.className = imgClass;
+        host.insertBefore(img, host.firstChild);
+      }
+      img.src = logo; img.alt = alt || 'logo';
+      if (dot) dot.style.display = 'none';
+    } else {
+      if (img) img.remove();
+      if (dot) dot.style.display = '';
+    }
+  }
+
+  function setFavicon(href) {
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = href;
+  }
+
+  // 설정 폼 채우기 + 미리보기
+  function renderSettings() {
+    const nameI = $('#set-brand-name');
+    const subI = $('#set-brand-sub');
+    if (!nameI || !subI) return;
+    nameI.value = settings.brand_name || '';
+    subI.value = settings.brand_sub || '';
+    pendingLogo = settings.logo_url || '';
+    updateSettingsPreview();
+  }
+
+  function updateSettingsPreview() {
+    const name = ($('#set-brand-name').value || '맑음').trim() || '맑음';
+    const sub = $('#set-brand-sub').value.trim();
+    $('#brand-preview-name').textContent = name;
+    $('#brand-preview-sub').textContent = sub;
+
+    const logoImg = $('#brand-preview-logo');
+    const dot = $('#brand-preview-dot');
+    if (pendingLogo) {
+      logoImg.src = pendingLogo; logoImg.hidden = false; dot.hidden = true;
+    } else {
+      logoImg.hidden = true; dot.hidden = false;
+    }
+
+    // 로고 업로드 박스 미리보기
+    const box = $('#logo-preview');
+    box.innerHTML = pendingLogo
+      ? `<img src="${esc(pendingLogo)}" alt="로고 미리보기">`
+      : '<span class="logo-preview__empty">로고 없음</span>';
+  }
+
+  // 이미지 파일 → 리사이즈된 PNG data URL (투명 배경 유지)
+  function fileToLogoDataURL(file, maxDim = 256) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('이미지를 불러올 수 없습니다.'));
+        img.onload = () => {
+          let { width, height } = img;
+          const scale = Math.min(1, maxDim / Math.max(width, height));
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleLogoFile(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const errEl = $('#set-error');
+    errEl.hidden = true;
+    if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    try {
+      pendingLogo = await fileToLogoDataURL(file);
+      updateSettingsPreview();
+    } catch (err) {
+      errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
+      errEl.hidden = false;
+    }
+    e.target.value = ''; // 같은 파일 재선택 허용
+  }
+
+  async function saveSettings() {
+    const btn = $('#set-save');
+    const savedEl = $('#set-saved');
+    const errEl = $('#set-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const rows = [
+      { key: 'brand_name', value: ($('#set-brand-name').value || '').trim() },
+      { key: 'brand_sub', value: ($('#set-brand-sub').value || '').trim() },
+      { key: 'logo_url', value: pendingLogo || '' }
+    ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+
+    const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) {
+      errEl.textContent = '저장 실패: ' + error.message;
+      errEl.hidden = false;
+      return;
+    }
+    // 로컬 상태 반영
+    rows.forEach((r) => { settings[r.key] = r.value; });
+    applyBrandChrome();
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // =========================================================
   //  CSV 내보내기
   // =========================================================
   function exportCSV() {
@@ -527,6 +687,12 @@
     $$('[data-goto]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.goto)));
     $('#consult-search').addEventListener('input', (e) => { searchTerm = e.target.value; renderConsultTable(); });
     $('#export-btn').addEventListener('click', exportCSV);
+    // 설정 탭
+    $('#set-brand-name').addEventListener('input', updateSettingsPreview);
+    $('#set-brand-sub').addEventListener('input', updateSettingsPreview);
+    $('#set-logo-file').addEventListener('change', handleLogoFile);
+    $('#set-logo-clear').addEventListener('click', () => { pendingLogo = ''; updateSettingsPreview(); });
+    $('#set-save').addEventListener('click', saveSettings);
     $('#drawer-backdrop').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
   }

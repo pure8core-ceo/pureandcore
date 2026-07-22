@@ -137,6 +137,10 @@ h1, h2 {
   gap: 20px;
 }
 .brand { display: flex; align-items: center; gap: 9px; }
+.brand__logo {
+  width: 32px; height: 32px; border-radius: 8px;
+  object-fit: contain; display: inline-block;
+}
 .brand__dot {
   width: 30px; height: 30px; border-radius: 50%;
   background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 50%, #fff), var(--accent));
