@@ -298,7 +298,8 @@
         name: val('f-name'),
         phone: val('f-phone'),
         size: val('f-size'),     // 평형 → size
-        region: val('f-region'), // 지역 → address
+        // 지역: 시/도(셀렉트) + 동네(입력) 합쳐서 address 로
+        region: [val('f-sido'), val('f-region')].filter(Boolean).join(' '),
         movein: val('f-date')    // 입주예정일 → desired_date (YYYY-MM-DD)
       };
 
