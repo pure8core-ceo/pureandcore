@@ -226,6 +226,58 @@
     if (b) root.style.setProperty('--bfont', b);
   }
 
+  // 새집증후군(PROBLEM) 섹션: eyebrow/제목(줄바꿈)/설명 + 유해물질 카드 4개 + 증상 칩
+  function applyProblem(str) {
+    var p = parseObj(str);
+    if (!p) return;
+    var root = document.getElementById('problem');
+    if (!root) return;
+    setText('#problem .eyebrow', p.eyebrow);
+    if (p.title) {
+      var h = root.querySelector('.h-lead h2');
+      if (h) h.innerHTML = esc(p.title).replace(/\n/g, '<br>');
+    }
+    if (p.desc != null && String(p.desc).trim()) {
+      var d = root.querySelector('.h-lead p');
+      if (d) d.textContent = String(p.desc);
+    }
+    if (Array.isArray(p.tox)) {
+      var cards = root.querySelectorAll('.tox-grid .tox');
+      p.tox.forEach(function (t, i) {
+        var card = cards[i];
+        if (!card || !t) return;
+        var tag = card.querySelector('.tox__tag');
+        var name = card.querySelector('.tox__name');
+        var code = card.querySelector('.tox__code');
+        var desc = card.querySelector('.tox__desc');
+        if (tag && t.tag) tag.textContent = t.tag;
+        if (name && t.name) name.textContent = t.name;
+        if (code && t.code) code.textContent = t.code;
+        if (desc && t.desc) desc.textContent = t.desc;
+      });
+    }
+    if (Array.isArray(p.symptoms)) {
+      var chips = root.querySelectorAll('.symptoms .chip');
+      p.symptoms.forEach(function (s, i) {
+        var chip = chips[i];
+        var txt = String(s == null ? '' : s).trim();
+        if (chip && txt) chip.textContent = txt;
+      });
+    }
+  }
+
+  // FAQ 문답: main.js 의 렌더러에 넘겨 다시 그림 (히어로 문구와 동일 패턴)
+  function applyFaq(str) {
+    var arr = parseJSON(str);
+    if (!arr || !arr.length) return;
+    var faqs = arr
+      .map(function (f) { return { q: (f && f.q) || '', a: (f && f.a) || '' }; })
+      .filter(function (f) { return f.q || f.a; });
+    if (!faqs.length) return;
+    window.__faqs = faqs;
+    if (typeof window.setFaqs === 'function') window.setFaqs(faqs);
+  }
+
   // 네비게이션 메뉴(4개 링크) + CTA 버튼 문구 · 푸터 "서비스" 메뉴도 동기화
   function applyNav(str) {
     var n = parseObj(str);
@@ -247,6 +299,8 @@
     if (!s) return;
     applyFonts(s);
     if (s.nav_json) applyNav(s.nav_json);
+    if (s.problem_json) applyProblem(s.problem_json);
+    if (s.faq_json) applyFaq(s.faq_json);
     var name = (s.brand_name || '').trim();
     var sub = (s.brand_sub || '').trim();
     var logo = (s.logo_url || '').trim();

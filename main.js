@@ -188,16 +188,24 @@
 
   /* ---------- FAQ 아코디언 (한 번에 하나만 열림) ---------- */
   const faqList = document.getElementById('faq-list');
+  // 관리자에서 저장한 문답(있으면)으로 초기화, 없으면 기본값. branding.js 가 캐시에서 먼저 채움.
+  let faqs = (Array.isArray(window.__faqs) && window.__faqs.length) ? window.__faqs.slice() : FAQS;
+  // branding.js 가 네트워크 최신값을 받으면 이 함수로 다시 그림
+  window.setFaqs = function (arr) {
+    if (Array.isArray(arr) && arr.length) { faqs = arr.slice(); renderFaqs(); }
+  };
 
   function renderFaqs() {
-    FAQS.forEach((f, i) => {
+    if (!faqList) return;
+    faqList.innerHTML = '';
+    faqs.forEach((f, i) => {
       const item = el('div', 'faq card' + (i === 0 ? ' is-open' : ''));
       item.innerHTML = `
         <button class="faq__q" type="button" aria-expanded="${i === 0}">
-          <span class="faq__q-text">${f.q}</span>
+          <span class="faq__q-text">${esc(f.q)}</span>
           <span class="faq__icon" aria-hidden="true">+</span>
         </button>
-        <div class="faq__a"><div><p>${f.a}</p></div></div>`;
+        <div class="faq__a"><div><p>${esc(f.a)}</p></div></div>`;
       const btn = item.querySelector('.faq__q');
       btn.addEventListener('click', () => {
         const willOpen = !item.classList.contains('is-open');

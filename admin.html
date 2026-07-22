@@ -274,6 +274,36 @@
       </div>
 
       <div class="card">
+        <div class="card__head"><h3>새집증후군 (PROBLEM)</h3></div>
+        <p class="set-desc">"왜 새집증후군일까요" 섹션의 제목·설명, 유해물질 카드 4개, 대표 증상 칩을 수정합니다.</p>
+
+        <div class="set-field">
+          <label for="problem-eyebrow">라벨 <span class="set-hint">제목 위 작은 글씨</span></label>
+          <input id="problem-eyebrow" class="set-input" maxlength="40" placeholder="WHY · 왜 새집증후군일까요">
+        </div>
+        <div class="set-field">
+          <label for="problem-title">제목 <span class="set-hint">줄바꿈(Enter) = 화면 줄바꿈</span></label>
+          <textarea id="problem-title" class="set-input rv-textarea" maxlength="80" placeholder="새 가구·새 벽지 냄새,&#10;그냥 '새집 냄새'가 아닙니다."></textarea>
+        </div>
+        <div class="set-field">
+          <label for="problem-desc">설명 <span class="set-hint">저장하면 굵은 글씨 강조는 사라집니다</span></label>
+          <textarea id="problem-desc" class="set-input rv-textarea" maxlength="400" placeholder="유해물질 설명 문단"></textarea>
+        </div>
+
+        <div class="content-sub-label">유해물질 카드 (4개)</div>
+        <div id="problem-tox-fields"></div>
+
+        <div class="content-sub-label">대표 증상 (4개)</div>
+        <div id="problem-symp-fields"></div>
+
+        <div class="set-actions">
+          <button class="set-save" id="problem-save">저장</button>
+          <span class="set-saved" id="problem-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="problem-error" hidden></span>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card__head"><h3>통계 밴드 (히어로 아래 4개 지표)</h3></div>
         <p class="set-desc">첫 화면 아래 "누적 시공 / 저감 / 추천율 / A/S" 4개 지표의 숫자·단위·설명을 수정합니다.</p>
         <div id="stats-fields"></div>
@@ -387,6 +417,22 @@
           <button class="set-save" id="contact-save">저장</button>
           <span class="set-saved" id="contact-saved" hidden>✓ 저장되었습니다</span>
           <span class="set-error" id="contact-error" hidden></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head"><h3>자주 묻는 질문 (FAQ)</h3></div>
+        <p class="set-desc">문답을 추가·수정·삭제할 수 있습니다. 순서대로 홈페이지에 표시되며, 맨 위 항목이 처음부터 펼쳐집니다.</p>
+
+        <div id="faq-fields"></div>
+
+        <div class="set-actions" style="margin-bottom:14px;">
+          <button type="button" class="btn-ghost" id="faq-add">+ 문답 추가</button>
+        </div>
+        <div class="set-actions">
+          <button class="set-save" id="faq-save">저장</button>
+          <span class="set-saved" id="faq-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="faq-error" hidden></span>
         </div>
       </div>
     </section>

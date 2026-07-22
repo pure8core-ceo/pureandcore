@@ -105,6 +105,28 @@
     links: ['새집증후군', '시공과정', '시공후기', '요금안내'],
     cta: '무료 측정 신청'
   };
+  // 새집증후군(PROBLEM) 섹션
+  const PROBLEM_DEFAULTS = {
+    eyebrow: 'WHY · 왜 새집증후군일까요',
+    title: "새 가구·새 벽지 냄새,\n그냥 '새집 냄새'가 아닙니다.",
+    desc: '건축자재·접착제·페인트에서 방출되는 포름알데히드와 휘발성유기화합물(VOCs)은 눈 시림, 두통, 피부 트러블, 호흡기 자극의 원인이 됩니다. 특히 밀폐된 신축·리모델링 공간에서 농도가 높게 쌓입니다.',
+    tox: [
+      { tag: '1급 발암물질', name: '포름알데히드', code: 'HCHO', desc: '합판·MDF·접착제에서 수년간 서서히 방출됩니다.' },
+      { tag: '신경계 자극', name: '톨루엔·자일렌', code: 'VOCs', desc: '페인트·바니시·시너 계열에서 주로 발생합니다.' },
+      { tag: '호흡기 자극', name: '벤젠·스티렌', code: 'VOCs', desc: '단열재·바닥재·마감재에서 검출될 수 있습니다.' },
+      { tag: '잔여 냄새', name: '암모니아·기타', code: '냄새 유발', desc: '환기만으로는 쉽게 사라지지 않는 복합 냄새입니다.' }
+    ],
+    symptoms: ['👁 눈·목 따가움', '🤕 두통·어지럼', '🌿 피부 가려움', '😮‍💨 매스꺼움·냄새']
+  };
+  // FAQ 문답 (자주 묻는 질문) — index.html/main.js 기본값과 동일
+  const FAQ_DEFAULTS = [
+    { q: '시공 후 바로 입주할 수 있나요?', a: '네. 베이크아웃과 환기 과정을 거친 뒤 시공 당일 저녁 또는 다음 날부터 입주 가능합니다. 잔여 냄새가 거의 없어 안심하고 생활하실 수 있습니다.' },
+    { q: '냄새가 완전히 사라지나요?', a: '자재에서 방출되는 유해물질을 분해·배출하기 때문에 냄새의 원인 자체가 줄어듭니다. 광촉매 코팅은 시공 후에도 지속적으로 오염물질을 분해합니다.' },
+    { q: '아이나 반려동물이 있어도 안전한가요?', a: '무독성·무취 친환경 인증 자재만 사용하므로 영유아와 반려동물이 있는 가정도 안전하게 이용하실 수 있습니다.' },
+    { q: '시공 시간은 얼마나 걸리나요?', a: '평형에 따라 다르지만 일반 아파트 기준 약 4~6시간 내외로 완료됩니다. 대형·상업 공간은 방문 측정 시 상세 일정을 안내드립니다.' },
+    { q: '효과는 얼마나 지속되나요?', a: '광촉매 코팅은 반영구적으로 작용하며, 시공 후 12개월간 무상 A/S로 재점검과 관리를 제공합니다.' },
+    { q: '이미 입주한 집도 시공 가능한가요?', a: '가능합니다. 입주 후에도 새 가구·리모델링 등으로 유해물질이 남아 있을 수 있어, 방문 측정 후 맞춤 시공을 진행합니다.' }
+  ];
   let pendingHeroBg = '';  // 히어로 배경 편집 중(data URL)
 
   // ---------- 유틸 ----------
@@ -970,6 +992,142 @@
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
 
+  // ---------- 새집증후군(PROBLEM) 섹션 ----------
+  function getProblem() {
+    let o = null;
+    try { const v = JSON.parse(settings.problem_json || 'null'); if (v && typeof v === 'object' && !Array.isArray(v)) o = v; } catch (e) { /* noop */ }
+    o = o || {};
+    const tox = PROBLEM_DEFAULTS.tox.map((d, i) => {
+      const t = (Array.isArray(o.tox) && o.tox[i]) ? o.tox[i] : {};
+      return {
+        tag: t.tag != null ? t.tag : d.tag,
+        name: t.name != null ? t.name : d.name,
+        code: t.code != null ? t.code : d.code,
+        desc: t.desc != null ? t.desc : d.desc
+      };
+    });
+    const symptoms = PROBLEM_DEFAULTS.symptoms.map((d, i) =>
+      (Array.isArray(o.symptoms) && o.symptoms[i] != null) ? o.symptoms[i] : d);
+    return {
+      eyebrow: o.eyebrow != null ? o.eyebrow : PROBLEM_DEFAULTS.eyebrow,
+      title: o.title != null ? o.title : PROBLEM_DEFAULTS.title,
+      desc: o.desc != null ? o.desc : PROBLEM_DEFAULTS.desc,
+      tox,
+      symptoms
+    };
+  }
+
+  function renderProblemFields() {
+    if (!$('#problem-eyebrow')) return;
+    const p = getProblem();
+    $('#problem-eyebrow').value = p.eyebrow || '';
+    $('#problem-title').value = p.title || '';
+    $('#problem-desc').value = p.desc || '';
+    $('#problem-tox-fields').innerHTML = p.tox.map((t, i) => `
+      <div class="content-item">
+        <div class="content-item__label">유해물질 0${i + 1}</div>
+        <div class="rv-grid">
+          <div class="set-field"><label for="ptox-tag-${i}">태그 <span class="set-hint">색상은 그대로</span></label><input id="ptox-tag-${i}" class="set-input" maxlength="20" value="${esc(t.tag)}"></div>
+          <div class="set-field"><label for="ptox-code-${i}">코드</label><input id="ptox-code-${i}" class="set-input" maxlength="20" value="${esc(t.code)}"></div>
+        </div>
+        <div class="set-field"><label for="ptox-name-${i}">이름</label><input id="ptox-name-${i}" class="set-input" maxlength="30" value="${esc(t.name)}"></div>
+        <div class="set-field"><label for="ptox-desc-${i}">설명</label><input id="ptox-desc-${i}" class="set-input" maxlength="80" value="${esc(t.desc)}"></div>
+      </div>`).join('');
+    $('#problem-symp-fields').innerHTML = p.symptoms.map((s, i) => `
+      <div class="set-field"><label for="psymp-${i}">증상 ${i + 1} <span class="set-hint">이모지 포함 가능</span></label><input id="psymp-${i}" class="set-input" maxlength="24" value="${esc(s)}"></div>`).join('');
+  }
+
+  async function saveProblem() {
+    const btn = $('#problem-save');
+    const savedEl = $('#problem-saved');
+    const errEl = $('#problem-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const tox = PROBLEM_DEFAULTS.tox.map((_, i) => ({
+      tag: ($('#ptox-tag-' + i).value || '').trim(),
+      name: ($('#ptox-name-' + i).value || '').trim(),
+      code: ($('#ptox-code-' + i).value || '').trim(),
+      desc: ($('#ptox-desc-' + i).value || '').trim()
+    }));
+    const symptoms = PROBLEM_DEFAULTS.symptoms.map((_, i) => ($('#psymp-' + i).value || '').trim());
+    const problem = {
+      eyebrow: ($('#problem-eyebrow').value || '').trim(),
+      title: ($('#problem-title').value || '').trim(),
+      desc: ($('#problem-desc').value || '').trim(),
+      tox,
+      symptoms
+    };
+    const value = JSON.stringify(problem);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'problem_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.problem_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // ---------- FAQ (자주 묻는 질문) ----------
+  function getFaqs() {
+    let arr = null;
+    try { const v = JSON.parse(settings.faq_json || 'null'); if (Array.isArray(v)) arr = v; } catch (e) { /* noop */ }
+    if (!arr || !arr.length) arr = FAQ_DEFAULTS;
+    return arr.map((f) => ({ q: (f && f.q) || '', a: (f && f.a) || '' }));
+  }
+
+  function readFaqDraft() {
+    const host = $('#faq-fields');
+    const items = [];
+    if (!host) return items;
+    host.querySelectorAll('.faq-item').forEach((row) => {
+      items.push({
+        q: (row.querySelector('.faq-q').value || '').trim(),
+        a: (row.querySelector('.faq-a').value || '').trim()
+      });
+    });
+    return items;
+  }
+
+  function renderFaqFields(list) {
+    const host = $('#faq-fields');
+    if (!host) return;
+    const faqs = list || getFaqs();
+    host.innerHTML = faqs.map((f, i) => `
+      <div class="content-item faq-item">
+        <div class="content-item__label faq-item__head">
+          <span>Q${i + 1}</span>
+          <button type="button" class="btn-mini btn-mini--danger faq-del">삭제</button>
+        </div>
+        <div class="set-field"><label>질문</label><input class="set-input faq-q" maxlength="120" value="${esc(f.q)}"></div>
+        <div class="set-field"><label>답변</label><textarea class="set-input rv-textarea faq-a" maxlength="600">${esc(f.a)}</textarea></div>
+      </div>`).join('');
+    host.querySelectorAll('.faq-del').forEach((b, i) => b.addEventListener('click', () => {
+      const draft = readFaqDraft();
+      draft.splice(i, 1);
+      renderFaqFields(draft.length ? draft : [{ q: '', a: '' }]);
+    }));
+  }
+
+  async function saveFaqs() {
+    const btn = $('#faq-save');
+    const savedEl = $('#faq-saved');
+    const errEl = $('#faq-error');
+    savedEl.hidden = true; errEl.hidden = true;
+
+    const faqs = readFaqDraft().filter((f) => f.q || f.a);
+    if (!faqs.length) { errEl.textContent = '최소 1개의 문답이 필요합니다.'; errEl.hidden = false; return; }
+    btn.disabled = true; btn.textContent = '저장 중…';
+    const value = JSON.stringify(faqs);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'faq_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.faq_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
   // =========================================================
   //  콘텐츠 관리 (시공 과정 PROCESS / 시공 현장 CASE)
   // =========================================================
@@ -993,12 +1151,14 @@
 
   function renderContent() {
     renderHeroFields();
+    renderProblemFields();
     renderStatsFields();
     renderProcessFields();
     renderMethodFields();
     renderCaseFields();
     renderPricingFields();
     renderContactFields();
+    renderFaqFields();
   }
 
   function renderProcessFields() {
@@ -1709,12 +1869,19 @@
     $('#hero-save').addEventListener('click', saveHero);
     $('#hero-bg-file').addEventListener('change', handleHeroBg);
     $('#hero-bg-clear').addEventListener('click', () => { pendingHeroBg = ''; renderHeroBgPreview(); });
+    $('#problem-save').addEventListener('click', saveProblem);
     $('#stats-save').addEventListener('click', saveStats);
     $('#process-save').addEventListener('click', saveProcess);
     $('#method-save').addEventListener('click', saveMethod);
     $('#cases-save').addEventListener('click', saveCases);
     $('#pricing-save').addEventListener('click', savePricing);
     $('#contact-save').addEventListener('click', saveContact);
+    $('#faq-save').addEventListener('click', saveFaqs);
+    $('#faq-add').addEventListener('click', () => {
+      const draft = readFaqDraft();
+      draft.push({ q: '', a: '' });
+      renderFaqFields(draft);
+    });
     // 리뷰 관리
     $('#review-new').addEventListener('click', () => openReviewEditor(null));
     $('#rv-save').addEventListener('click', saveReview);

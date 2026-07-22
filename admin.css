@@ -371,6 +371,13 @@ input, select { font-family: inherit; }
 }
 .content-item .set-field:last-child { margin-bottom: 0; }
 .content-item .set-input { max-width: none; }
+.content-item__label.faq-item__head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.content-sub-label {
+  font-size: 13px; font-weight: 700; color: var(--ink-2);
+  margin: 22px 0 12px;
+}
 
 /* ---------- 반응형 ---------- */
 @media (max-width: 900px) {
