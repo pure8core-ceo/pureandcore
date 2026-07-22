@@ -1,7 +1,8 @@
 // Supabase 클라이언트 초기화
 // CDN 버전 사용 (별도 패키지 설치 없이 바로 사용)
+// 주의: CDN 전역이 window.supabase 이므로, 내부 변수는 sbClient 로 둔다(이름 충돌 방지).
 
-let supabase = null;
+let sbClient = null;
 
 // Supabase 초기화 함수
 function initSupabase() {
@@ -14,14 +15,14 @@ function initSupabase() {
   const SUPABASE_URL = window.SUPABASE_URL || 'YOUR_SUPABASE_URL';
   const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
 
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return supabase;
+  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return sbClient;
 }
 
 // 상담 신청 저장
 async function saveConsultation(data) {
-  if (!supabase) {
-    supabase = initSupabase();
+  if (!sbClient) {
+    sbClient = initSupabase();
   }
 
   try {
@@ -47,7 +48,7 @@ async function saveConsultation(data) {
     // Supabase에 저장
     // 주의: anon 권한으로 .select()를 붙이면 SELECT RLS(인증 사용자만)에 걸리므로
     //       반환값 없이 INSERT만 수행한다.
-    const { error } = await supabase
+    const { error } = await sbClient
       .from('consultations')
       .insert([consultationData]);
 
@@ -89,5 +90,5 @@ window.consultationAPI = {
   init: initSupabase,
   save: saveConsultation,
   // 초기화된 클라이언트 재사용 (analytics.js 등에서 사용)
-  getClient: () => supabase || initSupabase()
+  getClient: () => sbClient || initSupabase()
 };
