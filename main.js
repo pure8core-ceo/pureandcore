@@ -160,12 +160,50 @@
     });
   }
 
+  /* ---------- 연락처: 숫자만 + 하이픈 자동 삽입 ---------- */
+  function formatKoreanPhone(value) {
+    const d = String(value).replace(/\D/g, '').slice(0, 11); // 숫자만, 최대 11자리
+    if (d.startsWith('02')) {
+      // 서울 지역번호 (02-XXX(X)-XXXX)
+      if (d.length <= 2) return d;
+      if (d.length <= 5) return d.replace(/(\d{2})(\d+)/, '$1-$2');
+      if (d.length <= 9) return d.replace(/(\d{2})(\d{3,4})(\d+)/, '$1-$2-$3');
+      return d.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+    }
+    // 010/011/070/지역번호 등 (국번 3자리 기준)
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return d.replace(/(\d{3})(\d+)/, '$1-$2');
+    if (d.length <= 10) return d.replace(/(\d{3})(\d{3})(\d+)/, '$1-$2-$3'); // 10자리: 3-3-4
+    return d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');                    // 11자리: 3-4-4
+  }
+
+  function initPhoneMask(el) {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const before = el.value;
+      const caret = el.selectionStart;
+      // 커서 앞의 숫자 개수를 세어 포맷 후 커서 위치를 복원
+      const digitsBeforeCaret = before.slice(0, caret).replace(/\D/g, '').length;
+      const formatted = formatKoreanPhone(before);
+      if (formatted === before) return;
+      el.value = formatted;
+      let seen = 0, pos = formatted.length;
+      for (let i = 0; i < formatted.length; i++) {
+        if (/\d/.test(formatted[i])) seen++;
+        if (seen >= digitsBeforeCaret) { pos = i + 1; break; }
+      }
+      try { el.setSelectionRange(pos, pos); } catch (e) { /* noop */ }
+    });
+  }
+
   /* ---------- 문의 폼 제출 상태 ---------- */
   function initForm() {
     const wrap = document.getElementById('contact-form-wrap');
     const form = document.getElementById('contact-form');
     const reset = document.getElementById('form-reset');
     if (!wrap || !form) return;
+
+    initPhoneMask(document.getElementById('f-phone'));
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
