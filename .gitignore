@@ -3,5 +3,6 @@ node_modules/
 .env
 .env.local
 
-# Supabase 수동 설정 스크립트 (로컬 전용 · 공개 배포에서 제외)
+# Supabase 수동 설정 스크립트 (sql/ 폴더 · 로컬 전용 · git/공개 배포에서 제외)
 *.sql
+sql/

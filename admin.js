@@ -698,7 +698,7 @@
     if (up.error) {
       const m = up.error.message || '';
       if (/bucket/i.test(m) && /not|exist/i.test(m)) {
-        throw new Error('이미지 저장소(site-assets 버킷)가 없습니다. supabase-storage.sql 을 먼저 실행하세요.');
+        throw new Error('이미지 저장소(site-assets 버킷)가 없습니다. sql/supabase-storage.sql 을 먼저 실행하세요.');
       }
       throw new Error('업로드 실패: ' + m);
     }
