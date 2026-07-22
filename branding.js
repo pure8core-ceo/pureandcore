@@ -226,9 +226,27 @@
     if (b) root.style.setProperty('--bfont', b);
   }
 
+  // 네비게이션 메뉴(4개 링크) + CTA 버튼 문구 · 푸터 "서비스" 메뉴도 동기화
+  function applyNav(str) {
+    var n = parseObj(str);
+    if (!n) return;
+    if (Array.isArray(n.links)) {
+      var navLinks = document.querySelectorAll('.nav__links a');
+      var footLinks = document.querySelectorAll('.footer__cols .footer__col:first-child a');
+      n.links.forEach(function (t, i) {
+        var txt = String(t == null ? '' : t).trim();
+        if (!txt) return;
+        if (navLinks[i]) navLinks[i].textContent = txt;
+        if (footLinks[i]) footLinks[i].textContent = txt;
+      });
+    }
+    setText('.nav__right .btn--primary', n.cta);
+  }
+
   function apply(s) {
     if (!s) return;
     applyFonts(s);
+    if (s.nav_json) applyNav(s.nav_json);
     var name = (s.brand_name || '').trim();
     var sub = (s.brand_sub || '').trim();
     var logo = (s.logo_url || '').trim();
