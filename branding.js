@@ -186,6 +186,27 @@
     });
   }
 
+  // 상담신청(CONTACT) 섹션: 라벨 / 제목(줄바꿈) / 설명 / 혜택 3개
+  function applyContact(str) {
+    var c = parseObj(str);
+    if (!c) return;
+    setText('.contact-info__eyebrow', c.eyebrow);
+    if (c.title) {
+      var t = document.querySelector('.contact-info__title');
+      if (t) t.innerHTML = esc(c.title).replace(/\n/g, '<br>');
+    }
+    setText('.contact-info__desc', c.desc);
+    if (Array.isArray(c.perks)) {
+      var perks = document.querySelectorAll('.contact-perks .perk');
+      c.perks.forEach(function (p, i) {
+        var el = perks[i];
+        var txt = String(p == null ? '' : p).trim();
+        if (!el || !txt) return;
+        el.innerHTML = '<span class="perk__dot">✓</span> ' + esc(txt);
+      });
+    }
+  }
+
   function apply(s) {
     if (!s) return;
     var name = (s.brand_name || '').trim();
@@ -237,6 +258,7 @@
     if (s.process_json) applyProcess(s.process_json);
     if (s.method_json) applyMethod(s.method_json);
     if (s.cases_json) applyCases(s.cases_json);
+    if (s.contact_json) applyContact(s.contact_json);
 
     if (logo) {
       document.querySelectorAll('.brand').forEach(function (brand) {

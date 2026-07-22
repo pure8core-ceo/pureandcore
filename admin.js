@@ -83,6 +83,12 @@
       { name: '대형 · 주택', size: '34평 ~ / 상업공간', price: '별도', priceUnit: ' 견적', feats: ['✓ 중형 패키지 전체 포함', '✓ 층별·구역별 맞춤 시공', '✓ 대면 결과 브리핑', '✓ 정기 관리 옵션'], cta: '상담 문의' }
     ]
   };
+  const CONTACT_DEFAULTS = {
+    eyebrow: '무료 방문 측정 신청',
+    title: '깨끗한 첫 숨,\n지금 신청하세요.',
+    desc: '신청 후 24시간 이내에 담당 매니저가 연락드립니다. 측정은 무료, 부담 없이 상담부터 시작하세요.',
+    perks: ['방문 측정 완전 무료', '시공 전후 결과 리포트 제공', '12개월 A/S 무상 보증']
+  };
   let pendingHeroBg = '';  // 히어로 배경 편집 중(data URL)
 
   // ---------- 유틸 ----------
@@ -859,6 +865,7 @@
     renderMethodFields();
     renderCaseFields();
     renderPricingFields();
+    renderContactFields();
   }
 
   function renderProcessFields() {
@@ -1127,6 +1134,59 @@
     btn.disabled = false; btn.textContent = '저장';
     if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
     settings.hero_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // ---------- 상담신청 섹션(CONTACT) ----------
+  function getContact() {
+    let o = null;
+    try { const v = JSON.parse(settings.contact_json || 'null'); if (v && typeof v === 'object' && !Array.isArray(v)) o = v; } catch (e) { /* noop */ }
+    o = o || {};
+    const perks = CONTACT_DEFAULTS.perks.map((d, i) => {
+      const p = (Array.isArray(o.perks) && o.perks[i] != null) ? o.perks[i] : d;
+      return p;
+    });
+    return {
+      eyebrow: o.eyebrow != null ? o.eyebrow : CONTACT_DEFAULTS.eyebrow,
+      title: o.title != null ? o.title : CONTACT_DEFAULTS.title,
+      desc: o.desc != null ? o.desc : CONTACT_DEFAULTS.desc,
+      perks
+    };
+  }
+
+  function renderContactFields() {
+    if (!$('#contact-eyebrow')) return;
+    const c = getContact();
+    $('#contact-eyebrow').value = c.eyebrow || '';
+    $('#contact-title').value = c.title || '';
+    $('#contact-desc').value = c.desc || '';
+    $('#contact-perk-1').value = c.perks[0] || '';
+    $('#contact-perk-2').value = c.perks[1] || '';
+    $('#contact-perk-3').value = c.perks[2] || '';
+  }
+
+  async function saveContact() {
+    const btn = $('#contact-save');
+    const savedEl = $('#contact-saved');
+    const errEl = $('#contact-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const perks = ['#contact-perk-1', '#contact-perk-2', '#contact-perk-3']
+      .map((sel) => ($(sel).value || '').trim()).filter(Boolean);
+    const contact = {
+      eyebrow: ($('#contact-eyebrow').value || '').trim(),
+      title: ($('#contact-title').value || '').trim(),
+      desc: ($('#contact-desc').value || '').trim(),
+      perks
+    };
+    const value = JSON.stringify(contact);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'contact_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.contact_json = value;
     savedEl.hidden = false;
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
@@ -1517,6 +1577,7 @@
     $('#method-save').addEventListener('click', saveMethod);
     $('#cases-save').addEventListener('click', saveCases);
     $('#pricing-save').addEventListener('click', savePricing);
+    $('#contact-save').addEventListener('click', saveContact);
     // 리뷰 관리
     $('#review-new').addEventListener('click', () => openReviewEditor(null));
     $('#rv-save').addEventListener('click', saveReview);

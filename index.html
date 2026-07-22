@@ -392,12 +392,12 @@
             </div>
             <div class="field">
               <label for="f-size">평형</label>
-              <input id="f-size" name="size" inputmode="numeric" maxlength="10" placeholder="예) 32평">
+              <input id="f-size" name="size" inputmode="numeric" maxlength="10" required placeholder="예) 32평">
             </div>
             <div class="field">
               <label for="f-sido">지역</label>
               <div class="region-row">
-                <select id="f-sido" name="sido" class="field-select">
+                <select id="f-sido" name="sido" class="field-select" required>
                   <option value="">시/도 선택</option>
                   <option>서울특별시</option>
                   <option>부산광역시</option>
@@ -417,7 +417,7 @@
                   <option>경상남도</option>
                   <option>제주특별자치도</option>
                 </select>
-                <select id="f-gugun" name="gugun" class="field-select" disabled>
+                <select id="f-gugun" name="gugun" class="field-select" required disabled>
                   <option value="">시/군/구</option>
                 </select>
               </div>
@@ -425,7 +425,7 @@
             </div>
             <div class="field">
               <label for="f-date">입주 예정일</label>
-              <input id="f-date" name="movein" type="date">
+              <input id="f-date" name="movein" type="date" required>
             </div>
             <!-- 스팸봇 트랩(허니팟): 사람에겐 보이지 않음. 값이 채워져 오면 봇으로 간주해 무시 -->
             <div class="hp-field" aria-hidden="true">
