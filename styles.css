@@ -246,6 +246,8 @@ h1, h2 {
   margin: 0 0 18px;
 }
 .hero__title span { color: var(--accent); }
+/* 앞 문구("새집의 설렘은 그대로,")는 기본 먹색으로 — 뒤 타이핑 문구만 강조색 */
+.hero__title .hero__title-lead { color: var(--ink); }
 /* 타이프라이터 (유해물질은 0으로 …) */
 .hero__type { display: inline; }
 .hero__type-text { color: var(--accent); }
