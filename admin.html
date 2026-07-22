@@ -40,6 +40,7 @@
       <button class="tab is-active" data-tab="dashboard">대시보드</button>
       <button class="tab" data-tab="consultations">상담 문의</button>
       <button class="tab" data-tab="traffic">트래픽</button>
+      <button class="tab" data-tab="reviews">리뷰</button>
       <button class="tab" data-tab="settings">설정</button>
     </nav>
     <div class="topbar__right">
@@ -125,6 +126,94 @@
               <tbody id="path-tbody"></tbody></table>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ===== 리뷰 탭 ===== -->
+    <section class="panel" data-panel="reviews" hidden>
+      <div class="toolbar">
+        <div class="toolbar__right">
+          <button class="set-save" id="review-new">+ 새 리뷰</button>
+        </div>
+      </div>
+
+      <!-- 리뷰 편집 폼 -->
+      <div class="card review-editor" id="review-editor" hidden>
+        <div class="card__head"><h3 id="review-editor-title">새 리뷰</h3></div>
+
+        <div class="rv-grid">
+          <div class="set-field">
+            <label for="rv-name">이름 <span class="set-hint">첫 글자가 아바타로 사용됩니다</span></label>
+            <input id="rv-name" class="set-input" maxlength="20" placeholder="김O은">
+          </div>
+          <div class="set-field">
+            <label for="rv-tag">태그 <span class="set-hint">필터에 사용</span></label>
+            <input id="rv-tag" class="set-input" maxlength="20" list="rv-tag-list" placeholder="신축 / 아파트 / 리모델링 / 오피스">
+            <datalist id="rv-tag-list">
+              <option value="신축"></option>
+              <option value="아파트"></option>
+              <option value="리모델링"></option>
+              <option value="오피스"></option>
+            </datalist>
+          </div>
+          <div class="set-field">
+            <label for="rv-meta">정보 <span class="set-hint">평형 · 지역 · 유형</span></label>
+            <input id="rv-meta" class="set-input" maxlength="60" placeholder="34평 · 서울 마포 · 신축 아파트">
+          </div>
+          <div class="set-field">
+            <label for="rv-date">날짜</label>
+            <input id="rv-date" class="set-input" maxlength="10" placeholder="2026.06">
+          </div>
+          <div class="set-field">
+            <label for="rv-rating">별점</label>
+            <select id="rv-rating" class="set-input">
+              <option value="5">★★★★★ (5)</option>
+              <option value="4">★★★★☆ (4)</option>
+              <option value="3">★★★☆☆ (3)</option>
+              <option value="2">★★☆☆☆ (2)</option>
+              <option value="1">★☆☆☆☆ (1)</option>
+            </select>
+          </div>
+          <div class="set-field">
+            <label for="rv-published">게시 상태</label>
+            <select id="rv-published" class="set-input">
+              <option value="1">게시 (홈페이지 노출)</option>
+              <option value="0">숨김</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="set-field">
+          <label for="rv-body">후기 내용</label>
+          <textarea id="rv-body" class="set-input rv-textarea" maxlength="600" rows="4" placeholder="후기 내용을 입력하세요"></textarea>
+        </div>
+
+        <div class="set-field">
+          <label>현장 사진 <span class="set-hint">선택 · 자동 리사이즈</span></label>
+          <div class="logo-uploader">
+            <div class="logo-preview logo-preview--wide" id="rv-photo-preview"><span class="logo-preview__empty">사진 없음</span></div>
+            <div class="logo-actions">
+              <label class="btn-file">이미지 선택
+                <input type="file" id="rv-photo-file" accept="image/*" hidden>
+              </label>
+              <button type="button" class="btn-ghost" id="rv-photo-clear">제거</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="set-actions">
+          <button class="set-save" id="rv-save">저장</button>
+          <button type="button" class="btn-ghost" id="rv-cancel">취소</button>
+          <span class="set-saved" id="rv-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="rv-error" hidden></span>
+        </div>
+      </div>
+
+      <!-- 리뷰 목록 -->
+      <div class="card">
+        <div class="card__head"><h3>등록된 리뷰 <span class="review-count" id="review-count"></span></h3></div>
+        <div id="review-list"></div>
+        <div class="empty" id="review-empty" hidden>등록된 리뷰가 없습니다. "새 리뷰"로 추가하세요.</div>
       </div>
     </section>
 

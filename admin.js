@@ -32,6 +32,9 @@
   };
   let settings = { ...SETTINGS_DEFAULTS };
   let pendingLogo = ''; // 설정 폼에서 편집 중인 로고(data URL)
+  let reviews = [];
+  let editingReviewId = null;   // null = 새 리뷰 작성
+  let pendingReviewPhoto = '';  // 리뷰 편집 중인 사진(data URL)
 
   // ---------- 유틸 ----------
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -176,6 +179,12 @@
     if (pRes.error) console.error('방문 로드 오류:', pRes.error.message);
     consultations = cRes.data || [];
     pageViews = pRes.data || [];
+
+    // 리뷰 (테이블 미생성 시에도 대시보드가 깨지지 않도록 개별 try/catch)
+    try {
+      const rRes = await client.from('reviews').select('*').order('created_at', { ascending: false });
+      reviews = rRes.error ? [] : (rRes.data || []);
+    } catch (e) { reviews = []; }
   }
 
   // =========================================================
@@ -185,6 +194,7 @@
     renderDashboard();
     renderConsultTab();
     renderTrafficTab();
+    renderReviewList();
     renderSettings();
   }
 
@@ -594,8 +604,9 @@
       : '<span class="logo-preview__empty">로고 없음</span>';
   }
 
-  // 이미지 파일 → 리사이즈된 PNG data URL (투명 배경 유지)
-  function fileToLogoDataURL(file, maxDim = 256) {
+  // 이미지 파일 → 리사이즈된 data URL
+  //  · 로고: PNG(투명 배경 유지) / 리뷰 사진: JPEG(용량 절감)
+  function fileToLogoDataURL(file, maxDim = 256, mime = 'image/png', quality = 0.9) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
@@ -609,8 +620,10 @@
           height = Math.round(height * scale);
           const canvas = document.createElement('canvas');
           canvas.width = width; canvas.height = height;
-          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/png'));
+          const ctx = canvas.getContext('2d');
+          if (mime === 'image/jpeg') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height); }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL(mime, quality));
         };
         img.src = reader.result;
       };
@@ -719,6 +732,168 @@
   }
 
   // =========================================================
+  //  리뷰 관리 (작성 / 수정 / 삭제 / 게시토글)
+  // =========================================================
+  function starStr(n) {
+    const k = Math.max(0, Math.min(5, parseInt(n, 10) || 5));
+    return '★'.repeat(k) + '☆'.repeat(5 - k);
+  }
+
+  function renderReviewList() {
+    const host = $('#review-list');
+    if (!host) return;
+    const countEl = $('#review-count');
+    const emptyEl = $('#review-empty');
+    if (countEl) countEl.textContent = reviews.length ? `${reviews.length}개` : '';
+    if (emptyEl) emptyEl.hidden = reviews.length > 0;
+
+    host.innerHTML = reviews.map((r) => {
+      const pub = r.is_published;
+      const thumb = r.photo_url
+        ? `<div class="rv-item__thumb" style="background-image:url('${esc(r.photo_url)}')"></div>`
+        : `<div class="rv-item__thumb">${esc((r.name || '·').trim().charAt(0) || '·')}</div>`;
+      return `
+        <div class="rv-item ${pub ? '' : 'is-hidden'}" data-id="${esc(r.id)}">
+          ${thumb}
+          <div class="rv-item__main">
+            <div class="rv-item__top">
+              <span class="rv-item__name">${esc(r.name)}</span>
+              <span class="rv-item__stars">${starStr(r.rating)}</span>
+              ${r.tag ? `<span class="rv-tagchip">#${esc(r.tag)}</span>` : ''}
+              <span class="rv-badge ${pub ? 'rv-badge--on' : 'rv-badge--off'}">${pub ? '게시' : '숨김'}</span>
+            </div>
+            <div class="rv-item__meta">${esc([r.meta, r.review_date].filter(Boolean).join(' · '))}</div>
+            <p class="rv-item__body">${esc(r.body)}</p>
+          </div>
+          <div class="rv-item__actions">
+            <button class="btn-mini" data-act="edit">수정</button>
+            <button class="btn-mini" data-act="toggle">${pub ? '숨김' : '게시'}</button>
+            <button class="btn-mini btn-mini--danger" data-act="delete">삭제</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    $$('#review-list .rv-item').forEach((row) => {
+      const id = row.dataset.id;
+      row.querySelector('[data-act="edit"]').addEventListener('click', () => openReviewEditor(id));
+      row.querySelector('[data-act="toggle"]').addEventListener('click', () => toggleReviewPublished(id));
+      row.querySelector('[data-act="delete"]').addEventListener('click', () => deleteReview(id));
+    });
+  }
+
+  async function reloadReviews() {
+    try {
+      const r = await client.from('reviews').select('*').order('created_at', { ascending: false });
+      if (!r.error) reviews = r.data || [];
+    } catch (e) { /* noop */ }
+  }
+
+  function openReviewEditor(id) {
+    editingReviewId = (id == null ? null : id);
+    const r = id == null ? null : reviews.find((x) => String(x.id) === String(id));
+    $('#review-editor-title').textContent = r ? '리뷰 수정' : '새 리뷰';
+    $('#rv-name').value = r ? (r.name || '') : '';
+    $('#rv-tag').value = r ? (r.tag || '') : '';
+    $('#rv-meta').value = r ? (r.meta || '') : '';
+    $('#rv-date').value = r ? (r.review_date || '') : '';
+    $('#rv-rating').value = String(r ? (r.rating || 5) : 5);
+    $('#rv-published').value = (r ? r.is_published : true) ? '1' : '0';
+    $('#rv-body').value = r ? (r.body || '') : '';
+    pendingReviewPhoto = r ? (r.photo_url || '') : '';
+    updateReviewPhotoPreview();
+    $('#rv-error').hidden = true;
+    $('#rv-saved').hidden = true;
+    $('#review-editor').hidden = false;
+    $('#review-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function closeReviewEditor() {
+    $('#review-editor').hidden = true;
+    editingReviewId = null;
+    pendingReviewPhoto = '';
+  }
+
+  function updateReviewPhotoPreview() {
+    const box = $('#rv-photo-preview');
+    if (!box) return;
+    box.innerHTML = pendingReviewPhoto
+      ? `<img src="${esc(pendingReviewPhoto)}" alt="사진 미리보기">`
+      : '<span class="logo-preview__empty">사진 없음</span>';
+  }
+
+  async function handleReviewPhoto(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const errEl = $('#rv-error');
+    errEl.hidden = true;
+    if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    try {
+      pendingReviewPhoto = await fileToLogoDataURL(file, 640, 'image/jpeg', 0.82);
+      updateReviewPhotoPreview();
+    } catch (err) {
+      errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
+      errEl.hidden = false;
+    }
+    e.target.value = '';
+  }
+
+  async function saveReview() {
+    const btn = $('#rv-save');
+    const savedEl = $('#rv-saved');
+    const errEl = $('#rv-error');
+    savedEl.hidden = true; errEl.hidden = true;
+
+    const name = ($('#rv-name').value || '').trim();
+    const body = ($('#rv-body').value || '').trim();
+    if (!name) { errEl.textContent = '이름을 입력하세요.'; errEl.hidden = false; return; }
+    if (!body) { errEl.textContent = '후기 내용을 입력하세요.'; errEl.hidden = false; return; }
+
+    btn.disabled = true; btn.textContent = '저장 중…';
+    const row = {
+      name,
+      meta: ($('#rv-meta').value || '').trim() || null,
+      tag: ($('#rv-tag').value || '').trim() || null,
+      rating: parseInt($('#rv-rating').value, 10) || 5,
+      review_date: ($('#rv-date').value || '').trim() || null,
+      body,
+      photo_url: pendingReviewPhoto || null,
+      is_published: $('#rv-published').value === '1'
+    };
+
+    let error;
+    if (editingReviewId == null) {
+      ({ error } = await client.from('reviews').insert([row]));
+    } else {
+      ({ error } = await client.from('reviews').update(row).eq('id', editingReviewId));
+    }
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+
+    await reloadReviews();
+    renderReviewList();
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; closeReviewEditor(); }, 900);
+  }
+
+  async function deleteReview(id) {
+    if (!window.confirm('이 리뷰를 삭제할까요? 되돌릴 수 없습니다.')) return;
+    const { error } = await client.from('reviews').delete().eq('id', id);
+    if (error) { alert('삭제 실패: ' + error.message); return; }
+    await reloadReviews();
+    renderReviewList();
+    if (String(editingReviewId) === String(id)) closeReviewEditor();
+  }
+
+  async function toggleReviewPublished(id) {
+    const r = reviews.find((x) => String(x.id) === String(id));
+    if (!r) return;
+    const { error } = await client.from('reviews').update({ is_published: !r.is_published }).eq('id', id);
+    if (error) { alert('변경 실패: ' + error.message); return; }
+    await reloadReviews();
+    renderReviewList();
+  }
+
+  // =========================================================
   //  CSV 내보내기
   // =========================================================
   function exportCSV() {
@@ -773,6 +948,12 @@
     $('#set-save').addEventListener('click', saveSettings);
     $('#set-biz-save').addEventListener('click', saveBizInfo);
     $('#set-contact-save').addEventListener('click', saveContactInfo);
+    // 리뷰 관리
+    $('#review-new').addEventListener('click', () => openReviewEditor(null));
+    $('#rv-save').addEventListener('click', saveReview);
+    $('#rv-cancel').addEventListener('click', closeReviewEditor);
+    $('#rv-photo-file').addEventListener('change', handleReviewPhoto);
+    $('#rv-photo-clear').addEventListener('click', () => { pendingReviewPhoto = ''; updateReviewPhotoPreview(); });
     $('#drawer-backdrop').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
   }

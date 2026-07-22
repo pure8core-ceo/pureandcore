@@ -6,8 +6,8 @@
 (function () {
   'use strict';
 
-  /* ---------- 데이터: 후기 ---------- */
-  const REVIEWS = [
+  /* ---------- 데이터: 후기 (DB 로드 실패 시 폴백 기본값) ---------- */
+  let REVIEWS = [
     { name: '김O은', avatar: '김', meta: '34평 · 서울 마포 · 신축 아파트', tag: '신축', date: '2026.06', text: '입주 전 측정에서 포름알데히드가 기준의 3배였는데, 시공 후 재측정 리포트를 직접 보여주셔서 믿음이 갔어요. 새 가구 냄새가 확 줄었습니다.', photo: 'assets/review-1.png' },
     { name: '박O호', avatar: '박', meta: '24평 · 경기 성남 · 리모델링', tag: '리모델링', date: '2026.06', text: '리모델링 후 페인트 냄새가 너무 심했는데 베이크아웃 하루 만에 코가 편해졌어요. 아이가 재채기하던 게 사라진 게 제일 좋습니다.', photo: false },
     { name: '이O진', avatar: '이', meta: '32평 · 인천 송도 · 아파트', tag: '아파트', date: '2026.05', text: '측정부터 시공, 재측정까지 과정 하나하나 설명해주셔서 안심됐어요. 감으로 하는 게 아니라 데이터로 보여주니 확실히 신뢰가 갑니다.', photo: 'assets/review-2.png' },
@@ -27,7 +27,17 @@
     ['#FBECEF', '#C0517A'],
   ];
 
-  const FILTERS = ['전체', '신축', '아파트', '리모델링', '오피스'];
+  // 필터는 로드된 리뷰의 태그에서 동적으로 생성 (기본 순서 우선)
+  const FILTER_ORDER = ['신축', '아파트', '리모델링', '오피스'];
+  function computeFilters() {
+    const tags = [];
+    REVIEWS.forEach((r) => { if (r.tag && !tags.includes(r.tag)) tags.push(r.tag); });
+    tags.sort((a, b) => {
+      const ia = FILTER_ORDER.indexOf(a), ib = FILTER_ORDER.indexOf(b);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    return ['전체', ...tags];
+  }
 
   /* ---------- 데이터: FAQ ---------- */
   const FAQS = [
@@ -78,6 +88,13 @@
     if (cls) n.className = cls;
     return n;
   };
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+  const stars = (n) => {
+    const k = Math.max(0, Math.min(5, parseInt(n, 10) || 5));
+    return '★'.repeat(k) + '☆'.repeat(5 - k);
+  };
 
   /* ---------- 후기 렌더 & 필터 ---------- */
   const grid = document.getElementById('reviews-grid');
@@ -89,20 +106,20 @@
     const card = el('article', 'review card');
     card.innerHTML = `
       <div class="review__head">
-        <span class="avatar" style="background:${bg};color:${fg};">${r.avatar}</span>
+        <span class="avatar" style="background:${bg};color:${fg};">${esc(r.avatar)}</span>
         <span class="review__who">
-          <span class="review__name">${r.name}</span>
-          <span class="review__meta">${r.meta}</span>
+          <span class="review__name">${esc(r.name)}</span>
+          <span class="review__meta">${esc(r.meta)}</span>
         </span>
       </div>
       <div class="review__rating">
-        <span class="review__stars">★★★★★</span>
-        <span class="review__date">${r.date}</span>
+        <span class="review__stars">${stars(r.rating)}</span>
+        <span class="review__date">${esc(r.date)}</span>
       </div>
-      <p class="review__text">${r.text}</p>
-      ${r.photo ? `<span class="review__photo" data-img="${r.photo}" role="img" aria-label="후기 현장 사진"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>현장 사진</span>` : ''}
+      <p class="review__text">${esc(r.text)}</p>
+      ${r.photo ? `<span class="review__photo" data-img="${esc(r.photo)}" role="img" aria-label="후기 현장 사진"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>현장 사진</span>` : ''}
       <div class="review__foot">
-        <span class="tag">#${r.tag}</span>
+        ${r.tag ? `<span class="tag">#${esc(r.tag)}</span>` : '<span></span>'}
         <span class="verified">✓ 시공 인증 후기</span>
       </div>`;
     return card;
@@ -117,7 +134,11 @@
   }
 
   function renderFilters() {
-    FILTERS.forEach((f) => {
+    if (!filterBar) return;
+    const filters = computeFilters();
+    if (!filters.includes(activeFilter)) activeFilter = '전체';
+    filterBar.replaceChildren();
+    filters.forEach((f) => {
       const btn = el('button', 'filter' + (f === activeFilter ? ' is-active' : ''));
       btn.type = 'button';
       btn.textContent = f;
@@ -130,6 +151,32 @@
       });
       filterBar.appendChild(btn);
     });
+  }
+
+  // 관리자에서 저장한 리뷰를 DB에서 로드 (실패 시 기본값 유지)
+  async function loadReviewsFromDB() {
+    if (!grid) return;
+    try {
+      const client = await window.appReady;
+      if (!client) return;
+      const { data, error } = await client
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error || !data || !data.length) return; // 폴백 유지
+      REVIEWS = data.map((row) => ({
+        name: row.name || '',
+        avatar: (row.name || '·').trim().charAt(0) || '·',
+        meta: row.meta || '',
+        tag: row.tag || '',
+        rating: row.rating || 5,
+        date: row.review_date || '',
+        text: row.body || '',
+        photo: row.photo_url || false
+      }));
+      renderFilters();
+      renderReviews();
+    } catch (e) { /* noop — 기본값 유지 */ }
   }
 
   /* ---------- FAQ 아코디언 (한 번에 하나만 열림) ---------- */
@@ -375,6 +422,7 @@
   /* ---------- init ---------- */
   renderFilters();
   renderReviews();
+  loadReviewsFromDB();
   renderFaqs();
   initForm();
   applyHeroImage();
