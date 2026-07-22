@@ -417,8 +417,11 @@
                   <option>경상남도</option>
                   <option>제주특별자치도</option>
                 </select>
-                <input id="f-region" name="region" maxlength="40" placeholder="예) 마포구 합정동">
+                <select id="f-gugun" name="gugun" class="field-select" disabled>
+                  <option value="">시/군/구</option>
+                </select>
               </div>
+              <input id="f-region" name="region" maxlength="40" placeholder="상세 주소 (동·번지, 선택)">
             </div>
             <div class="field">
               <label for="f-date">입주 예정일</label>
@@ -492,6 +495,7 @@
   <script src="supabase-client.js"></script>
   <script src="init-config.js"></script>
   <script src="branding.js"></script>
+  <script src="region-data.js"></script>
   <script src="main.js"></script>
   <script src="analytics.js"></script>
 </body>

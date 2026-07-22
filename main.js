@@ -259,6 +259,19 @@
 
     initPhoneMask(document.getElementById('f-phone'));
 
+    // 지역 연동 드롭다운: 시/도 선택 → 시/군/구 목록 갱신 (세종은 하위 없음 → 비활성)
+    (function () {
+      const sido = document.getElementById('f-sido');
+      const gugun = document.getElementById('f-gugun');
+      if (!sido || !gugun) return;
+      sido.addEventListener('change', function () {
+        const list = (window.KR_REGIONS && window.KR_REGIONS[sido.value]) || [];
+        gugun.innerHTML = '<option value="">시/군/구</option>' +
+          list.map(function (g) { return '<option>' + g + '</option>'; }).join('');
+        gugun.disabled = list.length === 0;
+      });
+    })();
+
     // 입주 예정일: 오늘 이후만 선택 가능하도록 min 설정
     const dateEl = document.getElementById('f-date');
     if (dateEl) {
@@ -298,8 +311,8 @@
         name: val('f-name'),
         phone: val('f-phone'),
         size: val('f-size'),     // 평형 → size
-        // 지역: 시/도(셀렉트) + 동네(입력) 합쳐서 address 로
-        region: [val('f-sido'), val('f-region')].filter(Boolean).join(' '),
+        // 지역: 시/도 + 시/군/구(연동 셀렉트) + 상세주소(입력) 합쳐서 address 로
+        region: [val('f-sido'), val('f-gugun'), val('f-region')].filter(Boolean).join(' '),
         movein: val('f-date')    // 입주예정일 → desired_date (YYYY-MM-DD)
       };
 

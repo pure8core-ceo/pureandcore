@@ -570,8 +570,8 @@ h1, h2 {
 }
 .field-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
 .region-row { display: flex; gap: 10px; }
-.region-row .field-select { flex: 0 0 44%; }
-.region-row input { flex: 1; }
+.region-row .field-select { flex: 1; min-width: 0; }
+.field-select:disabled { background: var(--alt); color: var(--soft); cursor: not-allowed; }
 .form__submit {
   margin-top: 6px; background: var(--accent); color: #fff; border: none;
   padding: 16px; border-radius: 14px; font-weight: 800; font-size: 16px; cursor: pointer;
