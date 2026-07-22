@@ -233,6 +233,17 @@ input, select { font-family: inherit; }
 .drawer__save:hover { filter: brightness(1.05); }
 .drawer__save:disabled { opacity: .6; }
 .drawer__saved { color: var(--ok); font-size: 13px; text-align: center; margin-top: 10px; }
+.drawer__field { margin-top: 12px; }
+.drawer__field:first-of-type { margin-top: 4px; }
+.drawer__field .drawer__key { display: block; width: auto; margin-bottom: 6px; }
+.drawer__field .notes-area { min-height: 68px; margin-top: 0; }
+.drawer__delete {
+  margin-top: 10px; width: 100%; background: none; color: var(--danger);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.drawer__delete:hover { background: #FBE6E7; border-color: #F3C6C9; }
+.drawer__delete:disabled { opacity: .6; }
 
 /* ---------- 설정 탭 ---------- */
 .topbar__name, .login__name { display: inline; }

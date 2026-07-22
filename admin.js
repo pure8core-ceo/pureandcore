@@ -409,7 +409,7 @@
     if (!c) return;
     const panel = $('#drawer-panel');
     const row = (k, v) => `<div class="drawer__row"><span class="drawer__key">${k}</span><span class="drawer__val">${v}</span></div>`;
-    const phoneLink = c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '-';
+    const field = (k, input) => `<div class="drawer__field"><label class="drawer__key">${k}</label>${input}</div>`;
 
     panel.innerHTML = `
       <div class="drawer__head">
@@ -419,11 +419,17 @@
         </div>
         <button class="drawer__close" id="drawer-close">×</button>
       </div>
-      ${row('연락처', phoneLink)}
-      ${row('평형', esc(c.size || '-'))}
-      ${c.address ? row('지역', esc(c.address)) : ''}
-      ${row('입주예정', esc(c.desired_date || '-'))}
-      ${c.message ? row('메시지', esc(c.message)) : ''}
+
+      <div class="drawer__section">
+        <h4>신청 내용</h4>
+        ${field('이름', `<input class="status-select" id="d-name" value="${esc(c.name || '')}">`)}
+        ${field('연락처', `<input class="status-select" id="d-phone" value="${esc(c.phone || '')}">`)}
+        ${field('평형', `<input class="status-select" id="d-size" placeholder="예: 32평" value="${esc(c.size || '')}">`)}
+        ${field('지역', `<input class="status-select" id="d-address" placeholder="예: 서울특별시 강남구" value="${esc(c.address || '')}">`)}
+        ${field('입주예정', `<input class="status-select" id="d-desired" placeholder="예: 2026-08" value="${esc(c.desired_date || '')}">`)}
+        ${field('메시지', `<textarea class="notes-area" id="d-message" placeholder="고객 메시지">${esc(c.message || '')}</textarea>`)}
+      </div>
+
       ${row('유입', `${esc(c.utm_source || 'direct')} / ${esc(c.utm_medium || 'none')}`)}
       ${c.utm_campaign && c.utm_campaign !== 'none' ? row('캠페인', esc(c.utm_campaign)) : ''}
       ${c.referrer && c.referrer !== 'direct' ? row('referrer', esc(c.referrer)) : ''}
@@ -444,18 +450,29 @@
       </div>
       <button class="drawer__save" id="d-save">저장</button>
       <p class="drawer__saved" id="d-saved" hidden>✓ 저장되었습니다</p>
+      <button class="drawer__delete" id="d-delete">상담 신청 삭제</button>
     `;
     $('#drawer').hidden = false;
     $('#drawer-close').addEventListener('click', closeDrawer);
     $('#d-save').addEventListener('click', () => saveConsult(c.id));
+    $('#d-delete').addEventListener('click', () => deleteConsult(c.id));
   }
 
   function closeDrawer() { $('#drawer').hidden = true; }
 
   async function saveConsult(id) {
+    const name = $('#d-name').value.trim();
+    const phone = $('#d-phone').value.trim();
+    if (!name || !phone) { alert('이름과 연락처는 비워둘 수 없습니다.'); return; }
     const btn = $('#d-save');
     btn.disabled = true; btn.textContent = '저장 중…';
     const patch = {
+      name: name,
+      phone: phone,
+      size: $('#d-size').value.trim() || null,
+      address: $('#d-address').value.trim() || null,
+      desired_date: $('#d-desired').value.trim() || null,
+      message: $('#d-message').value.trim() || null,
       status: $('#d-status').value,
       assigned_to: $('#d-assigned').value.trim() || null,
       notes: $('#d-notes').value.trim() || null
@@ -466,8 +483,33 @@
     // 로컬 반영
     const c = consultations.find((x) => String(x.id) === String(id));
     if (c) Object.assign(c, patch);
+    const titleEl = $('#drawer-panel .drawer__title');
+    if (titleEl) titleEl.textContent = name;
     $('#d-saved').hidden = false;
     setTimeout(() => { $('#d-saved').hidden = true; }, 1500);
+    renderConsultTab();
+    renderDashboard();
+  }
+
+  async function deleteConsult(id) {
+    const c = consultations.find((x) => String(x.id) === String(id));
+    const who = c && c.name ? `'${c.name}'님의 ` : '';
+    if (!confirm(`${who}상담 신청을 삭제할까요?\n삭제하면 되돌릴 수 없습니다.`)) return;
+    const btn = $('#d-delete');
+    btn.disabled = true; btn.textContent = '삭제 중…';
+    const { data, error } = await client.from('consultations').delete().eq('id', id).select();
+    if (error) {
+      btn.disabled = false; btn.textContent = '상담 신청 삭제';
+      alert('삭제 실패: ' + error.message); return;
+    }
+    if (!data || !data.length) {
+      // RLS DELETE 정책이 없으면 오류 없이 0건 삭제됨
+      btn.disabled = false; btn.textContent = '상담 신청 삭제';
+      alert('삭제 권한이 없습니다.\nsql/supabase-setup.sql 의 상담 DELETE 정책을 먼저 실행하세요.');
+      return;
+    }
+    consultations = consultations.filter((x) => String(x.id) !== String(id));
+    closeDrawer();
     renderConsultTab();
     renderDashboard();
   }
