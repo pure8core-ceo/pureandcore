@@ -207,8 +207,28 @@
     }
   }
 
+  // 폰트 프리셋 (index.html 에서 미리 로드된 폰트만 사용)
+  var FONTS = {
+    'pretendard':     "'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif",
+    'gowun-dodum':    "'Gowun Dodum', 'Pretendard', sans-serif",
+    'gowun-batang':   "'Gowun Batang', 'Pretendard', serif",
+    'nanum-myeongjo': "'Nanum Myeongjo', 'Pretendard', serif",
+    'jua':            "'Jua', 'Pretendard', sans-serif",
+    'system':         "-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif"
+  };
+
+  // 제목(--hfont) / 본문(--bfont) 폰트 적용
+  function applyFonts(s) {
+    var root = document.documentElement;
+    var h = FONTS[(s.font_heading || '').trim()];
+    var b = FONTS[(s.font_body || '').trim()];
+    if (h) root.style.setProperty('--hfont', h);
+    if (b) root.style.setProperty('--bfont', b);
+  }
+
   function apply(s) {
     if (!s) return;
+    applyFonts(s);
     var name = (s.brand_name || '').trim();
     var sub = (s.brand_sub || '').trim();
     var logo = (s.logo_url || '').trim();

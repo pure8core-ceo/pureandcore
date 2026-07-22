@@ -29,9 +29,20 @@
   const SETTINGS_DEFAULTS = {
     brand_name: '맑음', brand_sub: 'air care', logo_url: '',
     biz_name: '(주)맑음 에어케어', biz_ceo: '000', biz_reg_no: '000-00-00000',
-    contact_phone: '1600-0000', contact_hours: '평일 09:00 – 19:00', kakao_url: ''
+    contact_phone: '1600-0000', contact_hours: '평일 09:00 – 19:00', kakao_url: '',
+    font_heading: 'gowun-dodum', font_body: 'pretendard'
   };
   let settings = { ...SETTINGS_DEFAULTS };
+
+  // 폰트 프리셋 (branding.js·index.html 과 동일하게 유지)
+  const FONTS = {
+    'pretendard':     "'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif",
+    'gowun-dodum':    "'Gowun Dodum', 'Pretendard', sans-serif",
+    'gowun-batang':   "'Gowun Batang', 'Pretendard', serif",
+    'nanum-myeongjo': "'Nanum Myeongjo', 'Pretendard', serif",
+    'jua':            "'Jua', 'Pretendard', sans-serif",
+    'system':         "-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif"
+  };
   let pendingLogo = ''; // 설정 폼에서 편집 중인 로고(data URL)
   let reviews = [];
   let editingReviewId = null;   // null = 새 리뷰 작성
@@ -687,6 +698,22 @@
       $('#set-review-count').value = settings.review_count || '';
       $('#set-hero-review-count').value = settings.hero_review_count || '';
     }
+
+    // 폰트 폼
+    const fh = $('#set-font-heading');
+    if (fh) {
+      fh.value = FONTS[settings.font_heading] ? settings.font_heading : 'gowun-dodum';
+      $('#set-font-body').value = FONTS[settings.font_body] ? settings.font_body : 'pretendard';
+      updateFontPreview();
+    }
+  }
+
+  function updateFontPreview() {
+    const t = $('#font-preview-title');
+    const b = $('#font-preview-body');
+    if (!t || !b) return;
+    t.style.fontFamily = FONTS[$('#set-font-heading').value] || FONTS['gowun-dodum'];
+    b.style.fontFamily = FONTS[$('#set-font-body').value] || FONTS['pretendard'];
   }
 
   function updateSettingsPreview() {
@@ -869,6 +896,26 @@
       { key: 'rating_score', value: ($('#set-rating-score').value || '').trim() },
       { key: 'review_count', value: ($('#set-review-count').value || '').trim() },
       { key: 'hero_review_count', value: ($('#set-hero-review-count').value || '').trim() }
+    ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+
+    const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    rows.forEach((r) => { settings[r.key] = r.value; });
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  async function saveFonts() {
+    const btn = $('#set-font-save');
+    const savedEl = $('#set-font-saved');
+    const errEl = $('#set-font-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const rows = [
+      { key: 'font_heading', value: FONTS[$('#set-font-heading').value] ? $('#set-font-heading').value : 'gowun-dodum' },
+      { key: 'font_body', value: FONTS[$('#set-font-body').value] ? $('#set-font-body').value : 'pretendard' }
     ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
 
     const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });
@@ -1610,6 +1657,9 @@
     $('#set-biz-save').addEventListener('click', saveBizInfo);
     $('#set-contact-save').addEventListener('click', saveContactInfo);
     $('#set-rating-save').addEventListener('click', saveRating);
+    $('#set-font-save').addEventListener('click', saveFonts);
+    $('#set-font-heading').addEventListener('change', updateFontPreview);
+    $('#set-font-body').addEventListener('change', updateFontPreview);
     // 콘텐츠 관리
     $('#hero-save').addEventListener('click', saveHero);
     $('#hero-bg-file').addEventListener('change', handleHeroBg);

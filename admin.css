@@ -264,6 +264,13 @@ input, select { font-family: inherit; }
   padding: 11px 14px; font-size: 14px; outline: none; transition: border-color .15s;
 }
 .set-input:focus { border-color: var(--accent); }
+.set-select { max-width: none; background: var(--card); cursor: pointer; }
+.font-preview {
+  margin: 4px 0 20px; padding: 20px; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--paper);
+}
+.font-preview__title { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+.font-preview__body { margin-top: 10px; font-size: 15px; line-height: 1.7; color: var(--muted); }
 
 .logo-uploader { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .logo-preview {
