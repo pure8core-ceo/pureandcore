@@ -52,15 +52,22 @@
   /* ---------- 히어로 타이프라이터 (…0으로) ----------
      붙여주신 React 컴포넌트의 타이핑/삭제 루프 + 깜빡이는 커서를 바닐라로 이식.
      첫 문구는 '유해물질은 0으로', 나머지는 온브랜드 변형. 한 개만 쓰려면 배열을 1개로. */
-  const HERO_PHRASES = ['유해물질은 0으로', '포름알데히드는 0으로', 'VOCs는 0으로', '새집 냄새는 0으로'];
+  // 관리자에서 저장한 문구(있으면)로 초기화, 없으면 기본값. branding.js 가 캐시에서 먼저 채움.
+  let heroPhrases = (window.__heroPhrases && window.__heroPhrases.length)
+    ? window.__heroPhrases.slice()
+    : ['유해물질은 0으로', '포름알데히드는 0으로', 'VOCs는 0으로', '새집 냄새는 0으로'];
+  // branding.js 가 네트워크 최신값을 받으면 이 함수로 갱신
+  window.setHeroPhrases = function (arr) {
+    if (Array.isArray(arr) && arr.length) heroPhrases = arr.slice();
+  };
 
   function initHeroTypewriter() {
     const el = document.querySelector('.hero__type-text');
     const caret = document.querySelector('.hero__caret');
     if (!el) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || HERO_PHRASES.length <= 1) {         // 모션 최소화: 정적 표시
-      el.textContent = HERO_PHRASES[0] || el.textContent;
+    if (reduce || heroPhrases.length <= 1) {          // 모션 최소화: 정적 표시
+      el.textContent = heroPhrases[0] || el.textContent;
       if (reduce && caret) caret.style.display = 'none';
       return;
     }
@@ -68,7 +75,7 @@
     let i = 0, txt = '', deleting = false;
     el.textContent = '';
     (function tick() {
-      const full = HERO_PHRASES[i];
+      const full = heroPhrases[i % heroPhrases.length] || '';
       if (!deleting) {
         txt = full.slice(0, txt.length + 1);
         el.textContent = txt;
@@ -77,7 +84,7 @@
       }
       txt = full.slice(0, txt.length - 1);
       el.textContent = txt;
-      if (txt === '') { deleting = false; i = (i + 1) % HERO_PHRASES.length; return setTimeout(tick, GAP); }
+      if (txt === '') { deleting = false; i = (i + 1) % heroPhrases.length; return setTimeout(tick, GAP); }
       return setTimeout(tick, DEL);
     })();
   }

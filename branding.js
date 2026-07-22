@@ -21,6 +21,12 @@
     document.querySelectorAll(sel).forEach(function (el) { el.textContent = v; });
   }
 
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   function parseJSON(str) {
     try { var v = JSON.parse(str); return Array.isArray(v) ? v : null; }
     catch (e) { return null; }
@@ -39,6 +45,80 @@
       if (t && it.title) t.textContent = it.title;
       if (d && it.desc) d.textContent = it.desc;
     });
+  }
+
+  function parseObj(str) {
+    try { var v = JSON.parse(str); return (v && typeof v === 'object' && !Array.isArray(v)) ? v : null; }
+    catch (e) { return null; }
+  }
+
+  // 메인(히어로) 섹션
+  function applyHero(str) {
+    var h = parseObj(str);
+    if (!h) return;
+    setText('.pill-tag__text', h.pill);
+    setText('.hero__title-lead', h.titleLead);
+    setText('.hero__desc', h.desc);
+    setText('.hero__actions .btn--primary', h.btnPrimary);
+    setText('.hero__actions .btn--ghost', h.btnSecondary);
+
+    // 타이핑 문구 (main.js 의 타이프라이터가 참조)
+    if (Array.isArray(h.phrases) && h.phrases.length) {
+      var phrases = h.phrases.map(function (p) { return String(p).trim(); }).filter(Boolean);
+      if (phrases.length) {
+        window.__heroPhrases = phrases;
+        if (typeof window.setHeroPhrases === 'function') window.setHeroPhrases(phrases);
+      }
+    }
+
+    // 배경 이미지
+    var bg = (h.bg || '').trim();
+    if (bg) {
+      var stage = document.querySelector('.hero__stage');
+      if (stage) {
+        stage.dataset.bg = bg;
+        stage.style.backgroundImage =
+          "linear-gradient(180deg, rgba(20,48,61,0) 45%, rgba(15,40,55,0.34)), url('" + bg + "')";
+        stage.style.backgroundSize = 'cover';
+        stage.style.backgroundPosition = 'center 20%';
+        stage.classList.add('has-photo');
+      }
+    }
+  }
+
+  // 요금 안내(PRICING) 섹션
+  function applyPricing(str) {
+    var p = parseObj(str);
+    if (!p) return;
+    if (p.heading) {
+      setText('#pricing h2', p.heading.title);
+      setText('#pricing .h-center p', p.heading.desc);
+    }
+    if (Array.isArray(p.plans)) {
+      var cards = document.querySelectorAll('.plans .plan');
+      p.plans.forEach(function (pl, i) {
+        var card = cards[i];
+        if (!card || !pl) return;
+        var nameEl = card.querySelector('.plan__name');
+        var sizeEl = card.querySelector('.plan__size');
+        var priceEl = card.querySelector('.plan__price');
+        var featsEl = card.querySelector('.plan__feats');
+        var ctaEl = card.querySelector('.plan__cta');
+        if (nameEl && pl.name) nameEl.textContent = pl.name;
+        if (sizeEl && pl.size) sizeEl.textContent = pl.size;
+        if (priceEl && pl.price) {
+          priceEl.innerHTML = esc(pl.price) + '<small>' + esc(pl.priceUnit || '') + '</small>';
+        }
+        if (featsEl && Array.isArray(pl.feats) && pl.feats.length) {
+          featsEl.innerHTML = pl.feats
+            .map(function (f) { return String(f).trim(); })
+            .filter(Boolean)
+            .map(function (f) { return '<span>' + esc(f) + '</span>'; })
+            .join('');
+        }
+        if (ctaEl && pl.cta) ctaEl.textContent = pl.cta;
+      });
+    }
   }
 
   // 시공 현장(CASE) 갤러리: 사진/제목/설명
@@ -111,7 +191,9 @@
     setText('.rating-score__count', s.review_count);
     setText('.hero__badge-count', s.hero_review_count);
 
-    // 시공 과정 / 시공 현장
+    // 메인(히어로) / 요금 안내 / 시공 과정 / 시공 현장
+    if (s.hero_json) applyHero(s.hero_json);
+    if (s.pricing_json) applyPricing(s.pricing_json);
     if (s.process_json) applyProcess(s.process_json);
     if (s.cases_json) applyCases(s.cases_json);
 

@@ -50,6 +50,25 @@
   ];
   let pendingCasePhotos = ['', '', ''];  // 케이스 편집 중 사진(data URL)
 
+  const HERO_DEFAULTS = {
+    pill: '새집증후군 · 리모델링 유해물질 전문 시공',
+    titleLead: '새집의 설렘은 그대로,',
+    phrases: ['유해물질은 0으로', '포름알데히드는 0으로', 'VOCs는 0으로', '새집 냄새는 0으로'],
+    desc: '입주 전 단 하루. 건축자재에서 나오는 포름알데히드와 VOCs를 안전 기준 이하로. 아이도 반려동물도 안심하고 첫 숨을 쉬는 집을 만들어 드립니다.',
+    btnPrimary: '무료 방문 측정 신청 →',
+    btnSecondary: '시공과정 보기',
+    bg: ''
+  };
+  const PRICING_DEFAULTS = {
+    heading: { title: '평형에 맞는 합리적인 견적', desc: '방문 측정 후 정확한 견적을 안내드립니다. 아래는 기준 예상가입니다.' },
+    plans: [
+      { name: '소형 · 원룸', size: '~ 20평', price: '18', priceUnit: '만원 ~', feats: ['✓ 방문 정밀 측정', '✓ 광촉매 + 베이크아웃', '✓ 시공 후 재측정 1회', '✓ A/S 12개월'], cta: '견적 문의' },
+      { name: '중형 · 아파트', size: '20 ~ 34평', price: '32', priceUnit: '만원 ~', feats: ['✓ 소형 패키지 전체 포함', '✓ 시공 후 재측정 2회', '✓ 결과 리포트 발급', '✓ 공기청정 마감 코팅'], cta: '무료 측정 신청' },
+      { name: '대형 · 주택', size: '34평 ~ / 상업공간', price: '별도', priceUnit: ' 견적', feats: ['✓ 중형 패키지 전체 포함', '✓ 층별·구역별 맞춤 시공', '✓ 대면 결과 브리핑', '✓ 정기 관리 옵션'], cta: '상담 문의' }
+    ]
+  };
+  let pendingHeroBg = '';  // 히어로 배경 편집 중(data URL)
+
   // ---------- 유틸 ----------
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -797,8 +816,10 @@
   }
 
   function renderContent() {
+    renderHeroFields();
     renderProcessFields();
     renderCaseFields();
+    renderPricingFields();
   }
 
   function renderProcessFields() {
@@ -920,6 +941,182 @@
     btn.disabled = false; btn.textContent = '저장';
     if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
     settings.cases_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // ---------- 메인(히어로) ----------
+  function getHero() {
+    let o = null;
+    try { const v = JSON.parse(settings.hero_json || 'null'); if (v && typeof v === 'object' && !Array.isArray(v)) o = v; } catch (e) { /* noop */ }
+    o = o || {};
+    return {
+      pill: o.pill != null ? o.pill : HERO_DEFAULTS.pill,
+      titleLead: o.titleLead != null ? o.titleLead : HERO_DEFAULTS.titleLead,
+      phrases: (Array.isArray(o.phrases) && o.phrases.length) ? o.phrases : HERO_DEFAULTS.phrases,
+      desc: o.desc != null ? o.desc : HERO_DEFAULTS.desc,
+      btnPrimary: o.btnPrimary != null ? o.btnPrimary : HERO_DEFAULTS.btnPrimary,
+      btnSecondary: o.btnSecondary != null ? o.btnSecondary : HERO_DEFAULTS.btnSecondary,
+      bg: o.bg || ''
+    };
+  }
+
+  function renderHeroFields() {
+    if (!$('#hero-pill')) return;
+    const h = getHero();
+    $('#hero-pill').value = h.pill || '';
+    $('#hero-title-lead').value = h.titleLead || '';
+    $('#hero-phrases').value = (h.phrases || []).join('\n');
+    $('#hero-desc').value = h.desc || '';
+    $('#hero-btn-primary').value = h.btnPrimary || '';
+    $('#hero-btn-secondary').value = h.btnSecondary || '';
+    pendingHeroBg = h.bg || '';
+    renderHeroBgPreview();
+  }
+
+  function renderHeroBgPreview() {
+    const box = $('#hero-bg-preview');
+    if (!box) return;
+    box.innerHTML = pendingHeroBg
+      ? `<img src="${esc(pendingHeroBg)}" alt="배경 미리보기">`
+      : '<span class="logo-preview__empty">이미지 없음</span>';
+  }
+
+  async function handleHeroBg(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const errEl = $('#hero-error');
+    errEl.hidden = true;
+    if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    try {
+      pendingHeroBg = await fileToLogoDataURL(file, 1200, 'image/jpeg', 0.8);
+      renderHeroBgPreview();
+    } catch (err) {
+      errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
+      errEl.hidden = false;
+    }
+    e.target.value = '';
+  }
+
+  async function saveHero() {
+    const btn = $('#hero-save');
+    const savedEl = $('#hero-saved');
+    const errEl = $('#hero-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const phrases = ($('#hero-phrases').value || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    const hero = {
+      pill: ($('#hero-pill').value || '').trim(),
+      titleLead: ($('#hero-title-lead').value || '').trim(),
+      phrases,
+      desc: ($('#hero-desc').value || '').trim(),
+      btnPrimary: ($('#hero-btn-primary').value || '').trim(),
+      btnSecondary: ($('#hero-btn-secondary').value || '').trim(),
+      bg: pendingHeroBg || ''
+    };
+    const value = JSON.stringify(hero);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'hero_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.hero_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // ---------- 요금 안내(PRICING) ----------
+  function getPricing() {
+    let o = null;
+    try { const v = JSON.parse(settings.pricing_json || 'null'); if (v && typeof v === 'object' && !Array.isArray(v)) o = v; } catch (e) { /* noop */ }
+    o = o || {};
+    const heading = o.heading || {};
+    const plans = PRICING_DEFAULTS.plans.map((d, i) => {
+      const s = (Array.isArray(o.plans) && o.plans[i]) ? o.plans[i] : {};
+      return {
+        name: s.name != null ? s.name : d.name,
+        size: s.size != null ? s.size : d.size,
+        price: s.price != null ? s.price : d.price,
+        priceUnit: s.priceUnit != null ? s.priceUnit : d.priceUnit,
+        feats: (Array.isArray(s.feats) && s.feats.length) ? s.feats : d.feats,
+        cta: s.cta != null ? s.cta : d.cta
+      };
+    });
+    return {
+      heading: {
+        title: heading.title != null ? heading.title : PRICING_DEFAULTS.heading.title,
+        desc: heading.desc != null ? heading.desc : PRICING_DEFAULTS.heading.desc
+      },
+      plans
+    };
+  }
+
+  function renderPricingFields() {
+    const host = $('#pricing-fields');
+    if (!host) return;
+    const p = getPricing();
+    $('#price-title').value = p.heading.title || '';
+    $('#price-desc').value = p.heading.desc || '';
+    host.innerHTML = p.plans.map((pl, i) => `
+      <div class="content-item">
+        <div class="content-item__label">PLAN 0${i + 1}</div>
+        <div class="rv-grid">
+          <div class="set-field">
+            <label for="plan-name-${i}">이름</label>
+            <input id="plan-name-${i}" class="set-input" maxlength="30" value="${esc(pl.name)}">
+          </div>
+          <div class="set-field">
+            <label for="plan-size-${i}">평형</label>
+            <input id="plan-size-${i}" class="set-input" maxlength="30" value="${esc(pl.size)}">
+          </div>
+          <div class="set-field">
+            <label for="plan-price-${i}">가격</label>
+            <input id="plan-price-${i}" class="set-input" maxlength="20" value="${esc(pl.price)}">
+          </div>
+          <div class="set-field">
+            <label for="plan-unit-${i}">가격 단위</label>
+            <input id="plan-unit-${i}" class="set-input" maxlength="20" value="${esc(pl.priceUnit || '')}">
+          </div>
+        </div>
+        <div class="set-field">
+          <label for="plan-feats-${i}">혜택 <span class="set-hint">한 줄에 하나씩</span></label>
+          <textarea id="plan-feats-${i}" class="set-input rv-textarea" rows="4">${esc((pl.feats || []).join('\n'))}</textarea>
+        </div>
+        <div class="set-field">
+          <label for="plan-cta-${i}">버튼 문구</label>
+          <input id="plan-cta-${i}" class="set-input" maxlength="20" value="${esc(pl.cta)}">
+        </div>
+      </div>`).join('');
+  }
+
+  async function savePricing() {
+    const btn = $('#pricing-save');
+    const savedEl = $('#pricing-saved');
+    const errEl = $('#pricing-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const plans = PRICING_DEFAULTS.plans.map((_, i) => ({
+      name: ($('#plan-name-' + i).value || '').trim(),
+      size: ($('#plan-size-' + i).value || '').trim(),
+      price: ($('#plan-price-' + i).value || '').trim(),
+      priceUnit: ($('#plan-unit-' + i).value || '').trim(),
+      feats: ($('#plan-feats-' + i).value || '').split('\n').map((s) => s.trim()).filter(Boolean),
+      cta: ($('#plan-cta-' + i).value || '').trim()
+    }));
+    const pricing = {
+      heading: {
+        title: ($('#price-title').value || '').trim(),
+        desc: ($('#price-desc').value || '').trim()
+      },
+      plans
+    };
+    const value = JSON.stringify(pricing);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'pricing_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.pricing_json = value;
     savedEl.hidden = false;
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
@@ -1143,8 +1340,12 @@
     $('#set-contact-save').addEventListener('click', saveContactInfo);
     $('#set-rating-save').addEventListener('click', saveRating);
     // 콘텐츠 관리
+    $('#hero-save').addEventListener('click', saveHero);
+    $('#hero-bg-file').addEventListener('change', handleHeroBg);
+    $('#hero-bg-clear').addEventListener('click', () => { pendingHeroBg = ''; renderHeroBgPreview(); });
     $('#process-save').addEventListener('click', saveProcess);
     $('#cases-save').addEventListener('click', saveCases);
+    $('#pricing-save').addEventListener('click', savePricing);
     // 리뷰 관리
     $('#review-new').addEventListener('click', () => openReviewEditor(null));
     $('#rv-save').addEventListener('click', saveReview);
