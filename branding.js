@@ -21,6 +21,52 @@
     document.querySelectorAll(sel).forEach(function (el) { el.textContent = v; });
   }
 
+  function parseJSON(str) {
+    try { var v = JSON.parse(str); return Array.isArray(v) ? v : null; }
+    catch (e) { return null; }
+  }
+
+  // 시공 과정(PROCESS) 4단계: 제목/설명
+  function applyProcess(str) {
+    var items = parseJSON(str);
+    if (!items) return;
+    var steps = document.querySelectorAll('.steps .step');
+    items.forEach(function (it, i) {
+      var step = steps[i];
+      if (!step || !it) return;
+      var t = step.querySelector('.step__title');
+      var d = step.querySelector('.step__desc');
+      if (t && it.title) t.textContent = it.title;
+      if (d && it.desc) d.textContent = it.desc;
+    });
+  }
+
+  // 시공 현장(CASE) 갤러리: 사진/제목/설명
+  function applyCases(str) {
+    var items = parseJSON(str);
+    if (!items) return;
+    var cards = document.querySelectorAll('.cases > div');
+    items.forEach(function (it, i) {
+      var card = cards[i];
+      if (!card || !it) return;
+      var t = card.querySelector('.case__title');
+      var s = card.querySelector('.case__sub');
+      if (t && it.title) t.textContent = it.title;
+      if (s && it.sub) s.textContent = it.sub;
+      var photo = (it.photo || '').trim();
+      if (photo) {
+        var media = card.querySelector('.case__media');
+        var ph = card.querySelector('.case__ph');
+        if (media) {
+          media.style.backgroundImage = "url('" + photo + "')";
+          media.style.backgroundSize = 'cover';
+          media.style.backgroundPosition = 'center';
+        }
+        if (ph) ph.style.display = 'none';
+      }
+    });
+  }
+
   function apply(s) {
     if (!s) return;
     var name = (s.brand_name || '').trim();
@@ -59,6 +105,16 @@
         a.removeAttribute('rel');
       }
     });
+
+    // 후기 평점 / 개수
+    setText('.hero__badge-score, .rating-score__num', s.rating_score);
+    setText('.rating-score__count', s.review_count);
+    setText('.hero__badge-count', s.hero_review_count);
+
+    // 시공 과정 / 시공 현장
+    if (s.process_json) applyProcess(s.process_json);
+    if (s.cases_json) applyCases(s.cases_json);
+
     if (logo) {
       document.querySelectorAll('.brand').forEach(function (brand) {
         var dot = brand.querySelector('.brand__dot');

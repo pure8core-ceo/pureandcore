@@ -41,6 +41,7 @@
       <button class="tab" data-tab="consultations">상담 문의</button>
       <button class="tab" data-tab="traffic">트래픽</button>
       <button class="tab" data-tab="reviews">리뷰</button>
+      <button class="tab" data-tab="content">콘텐츠</button>
       <button class="tab" data-tab="settings">설정</button>
     </nav>
     <div class="topbar__right">
@@ -217,8 +218,59 @@
       </div>
     </section>
 
+    <!-- ===== 콘텐츠 탭 ===== -->
+    <section class="panel" data-panel="content" hidden>
+      <div class="card">
+        <div class="card__head"><h3>시공 과정 (PROCESS · 4단계)</h3></div>
+        <p class="set-desc">홈페이지 "PROCESS · 4단계 시공" 영역의 각 단계 제목·설명을 수정합니다.</p>
+        <div id="process-fields"></div>
+        <div class="set-actions">
+          <button class="set-save" id="process-save">저장</button>
+          <span class="set-saved" id="process-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="process-error" hidden></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__head"><h3>시공 현장 (CASE · 사진 갤러리)</h3></div>
+        <p class="set-desc">"CASE · 시공 현장" 영역의 사진과 제목·설명을 수정합니다. 사진은 선택 시 자동 리사이즈됩니다.</p>
+        <div id="cases-fields"></div>
+        <div class="set-actions">
+          <button class="set-save" id="cases-save">저장</button>
+          <span class="set-saved" id="cases-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="cases-error" hidden></span>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== 설정 탭 ===== -->
     <section class="panel" data-panel="settings" hidden>
+      <div class="card">
+        <div class="card__head"><h3>후기 평점·개수</h3></div>
+        <p class="set-desc">히어로 뱃지와 후기 영역에 표시되는 평점·후기 수를 수정합니다. (실제 리뷰 개수와 별개인 표시용 숫자)</p>
+
+        <div class="rv-grid">
+          <div class="set-field">
+            <label for="set-rating-score">평점</label>
+            <input id="set-rating-score" class="set-input" maxlength="10" placeholder="4.9">
+          </div>
+          <div class="set-field">
+            <label for="set-review-count">후기 수 <span class="set-hint">후기 영역 "전체 N개 후기 기준"</span></label>
+            <input id="set-review-count" class="set-input" maxlength="20" placeholder="3,214">
+          </div>
+          <div class="set-field">
+            <label for="set-hero-review-count">히어로 뱃지 후기 수 <span class="set-hint">"실사용 후기 N"</span></label>
+            <input id="set-hero-review-count" class="set-input" maxlength="20" placeholder="3,200+">
+          </div>
+        </div>
+
+        <div class="set-actions">
+          <button class="set-save" id="set-rating-save">저장</button>
+          <span class="set-saved" id="set-rating-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="set-rating-error" hidden></span>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card__head"><h3>브랜드 설정</h3></div>
         <p class="set-desc">여기서 변경한 로고와 기업명은 방문자에게 보이는 홈페이지에 바로 반영됩니다.</p>

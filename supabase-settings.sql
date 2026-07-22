@@ -40,5 +40,8 @@ insert into public.site_settings (key, value) values
   ('biz_reg_no', '000-00-00000'),
   ('contact_phone', '1600-0000'),
   ('contact_hours', '평일 09:00 – 19:00'),
-  ('kakao_url',     '')
+  ('kakao_url',     ''),
+  ('rating_score',      '4.9'),
+  ('review_count',      '3,214'),
+  ('hero_review_count', '3,200+')
 on conflict (key) do nothing;

@@ -36,6 +36,20 @@
   let editingReviewId = null;   // null = 새 리뷰 작성
   let pendingReviewPhoto = '';  // 리뷰 편집 중인 사진(data URL)
 
+  // 콘텐츠(시공 과정/현장) 기본값 — 공개 페이지 초기 HTML과 동일
+  const PROCESS_DEFAULTS = [
+    { title: '방문 정밀 측정', desc: '공인 측정기로 실내 공기질을 진단하고 오염 원인을 파악합니다.' },
+    { title: '이중 시공', desc: '광촉매 코팅과 고온 베이크아웃으로 유해물질을 분해·배출합니다.' },
+    { title: '재측정 & 인증', desc: '시공 후 수치를 다시 측정하고 결과 리포트를 발급해 드립니다.' },
+    { title: '12개월 A/S', desc: '시공 후에도 재점검과 사후 관리로 깨끗한 공기를 유지합니다.' }
+  ];
+  const CASE_DEFAULTS = [
+    { title: '01 · 방문 정밀 측정', sub: '공인 측정기로 실내 오염도를 진단합니다.', photo: '' },
+    { title: '02 · 이중 시공', sub: '광촉매 코팅 + 고온 베이크아웃 진행.', photo: '' },
+    { title: '03 · 재측정 완료', sub: '시공 후 수치를 재측정해 리포트를 발급합니다.', photo: '' }
+  ];
+  let pendingCasePhotos = ['', '', ''];  // 케이스 편집 중 사진(data URL)
+
   // ---------- 유틸 ----------
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -195,6 +209,7 @@
     renderConsultTab();
     renderTrafficTab();
     renderReviewList();
+    renderContent();
     renderSettings();
   }
 
@@ -581,6 +596,14 @@
       $('#set-contact-hours').value = settings.contact_hours || '';
       $('#set-kakao-url').value = settings.kakao_url || '';
     }
+
+    // 후기 평점·개수 폼
+    const rScore = $('#set-rating-score');
+    if (rScore) {
+      rScore.value = settings.rating_score || '';
+      $('#set-review-count').value = settings.review_count || '';
+      $('#set-hero-review-count').value = settings.hero_review_count || '';
+    }
   }
 
   function updateSettingsPreview() {
@@ -727,6 +750,176 @@
       return;
     }
     rows.forEach((r) => { settings[r.key] = r.value; });
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  async function saveRating() {
+    const btn = $('#set-rating-save');
+    const savedEl = $('#set-rating-saved');
+    const errEl = $('#set-rating-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const rows = [
+      { key: 'rating_score', value: ($('#set-rating-score').value || '').trim() },
+      { key: 'review_count', value: ($('#set-review-count').value || '').trim() },
+      { key: 'hero_review_count', value: ($('#set-hero-review-count').value || '').trim() }
+    ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+
+    const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    rows.forEach((r) => { settings[r.key] = r.value; });
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  // =========================================================
+  //  콘텐츠 관리 (시공 과정 PROCESS / 시공 현장 CASE)
+  // =========================================================
+  function getProcess() {
+    let arr = null;
+    try { const v = JSON.parse(settings.process_json || 'null'); if (Array.isArray(v)) arr = v; } catch (e) { /* noop */ }
+    return PROCESS_DEFAULTS.map((d, i) => ({
+      title: (arr && arr[i] && arr[i].title) || d.title,
+      desc: (arr && arr[i] && arr[i].desc) || d.desc
+    }));
+  }
+  function getCases() {
+    let arr = null;
+    try { const v = JSON.parse(settings.cases_json || 'null'); if (Array.isArray(v)) arr = v; } catch (e) { /* noop */ }
+    return CASE_DEFAULTS.map((d, i) => ({
+      title: (arr && arr[i] && arr[i].title) || d.title,
+      sub: (arr && arr[i] && arr[i].sub) || d.sub,
+      photo: (arr && arr[i] && arr[i].photo) || ''
+    }));
+  }
+
+  function renderContent() {
+    renderProcessFields();
+    renderCaseFields();
+  }
+
+  function renderProcessFields() {
+    const host = $('#process-fields');
+    if (!host) return;
+    const steps = getProcess();
+    host.innerHTML = steps.map((s, i) => `
+      <div class="content-item">
+        <div class="content-item__label">STEP 0${i + 1}</div>
+        <div class="set-field">
+          <label for="proc-title-${i}">제목</label>
+          <input id="proc-title-${i}" class="set-input" maxlength="40" value="${esc(s.title)}">
+        </div>
+        <div class="set-field">
+          <label for="proc-desc-${i}">설명</label>
+          <textarea id="proc-desc-${i}" class="set-input rv-textarea" maxlength="200" rows="2">${esc(s.desc)}</textarea>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderCaseFields() {
+    const host = $('#cases-fields');
+    if (!host) return;
+    const cases = getCases();
+    pendingCasePhotos = cases.map((c) => c.photo || '');
+    host.innerHTML = cases.map((c, i) => `
+      <div class="content-item">
+        <div class="content-item__label">CASE 0${i + 1}</div>
+        <div class="set-field">
+          <label>사진 <span class="set-hint">선택 · 자동 리사이즈</span></label>
+          <div class="logo-uploader">
+            <div class="logo-preview logo-preview--wide" id="case-preview-${i}"></div>
+            <div class="logo-actions">
+              <label class="btn-file">이미지 선택
+                <input type="file" id="case-file-${i}" accept="image/*" hidden>
+              </label>
+              <button type="button" class="btn-ghost" id="case-clear-${i}">제거</button>
+            </div>
+          </div>
+        </div>
+        <div class="set-field">
+          <label for="case-title-${i}">제목</label>
+          <input id="case-title-${i}" class="set-input" maxlength="40" value="${esc(c.title)}">
+        </div>
+        <div class="set-field">
+          <label for="case-sub-${i}">설명</label>
+          <input id="case-sub-${i}" class="set-input" maxlength="80" value="${esc(c.sub)}">
+        </div>
+      </div>`).join('');
+
+    // 미리보기 + 이벤트 바인딩 (동적 생성이라 매 렌더마다 연결)
+    cases.forEach((c, i) => {
+      renderCasePreview(i);
+      $('#case-file-' + i).addEventListener('change', (e) => handleCasePhoto(i, e));
+      $('#case-clear-' + i).addEventListener('click', () => { pendingCasePhotos[i] = ''; renderCasePreview(i); });
+    });
+  }
+
+  function renderCasePreview(i) {
+    const box = $('#case-preview-' + i);
+    if (!box) return;
+    box.innerHTML = pendingCasePhotos[i]
+      ? `<img src="${esc(pendingCasePhotos[i])}" alt="사진 미리보기">`
+      : '<span class="logo-preview__empty">사진 없음</span>';
+  }
+
+  async function handleCasePhoto(i, e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const errEl = $('#cases-error');
+    errEl.hidden = true;
+    if (!/^image\//.test(file.type)) { errEl.textContent = '이미지 파일만 선택하세요.'; errEl.hidden = false; return; }
+    try {
+      pendingCasePhotos[i] = await fileToLogoDataURL(file, 800, 'image/jpeg', 0.8);
+      renderCasePreview(i);
+    } catch (err) {
+      errEl.textContent = err.message || '이미지 처리 중 오류가 발생했습니다.';
+      errEl.hidden = false;
+    }
+    e.target.value = '';
+  }
+
+  async function saveProcess() {
+    const btn = $('#process-save');
+    const savedEl = $('#process-saved');
+    const errEl = $('#process-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const steps = PROCESS_DEFAULTS.map((_, i) => ({
+      title: ($('#proc-title-' + i).value || '').trim(),
+      desc: ($('#proc-desc-' + i).value || '').trim()
+    }));
+    const value = JSON.stringify(steps);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'process_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.process_json = value;
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
+  async function saveCases() {
+    const btn = $('#cases-save');
+    const savedEl = $('#cases-saved');
+    const errEl = $('#cases-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const cases = CASE_DEFAULTS.map((_, i) => ({
+      title: ($('#case-title-' + i).value || '').trim(),
+      sub: ($('#case-sub-' + i).value || '').trim(),
+      photo: pendingCasePhotos[i] || ''
+    }));
+    const value = JSON.stringify(cases);
+    const { error } = await client.from('site_settings')
+      .upsert([{ key: 'cases_json', value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) { errEl.textContent = '저장 실패: ' + error.message; errEl.hidden = false; return; }
+    settings.cases_json = value;
     savedEl.hidden = false;
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
@@ -948,6 +1141,10 @@
     $('#set-save').addEventListener('click', saveSettings);
     $('#set-biz-save').addEventListener('click', saveBizInfo);
     $('#set-contact-save').addEventListener('click', saveContactInfo);
+    $('#set-rating-save').addEventListener('click', saveRating);
+    // 콘텐츠 관리
+    $('#process-save').addEventListener('click', saveProcess);
+    $('#cases-save').addEventListener('click', saveCases);
     // 리뷰 관리
     $('#review-new').addEventListener('click', () => openReviewEditor(null));
     $('#rv-save').addEventListener('click', saveReview);
