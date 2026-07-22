@@ -175,6 +175,32 @@
           <span class="brand-preview__sub" id="brand-preview-sub">air care</span>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card__head"><h3>사업자 정보</h3></div>
+        <p class="set-desc">홈페이지 하단(푸터)의 상호·대표자·사업자등록번호에 반영됩니다.</p>
+
+        <div class="set-field">
+          <label for="set-biz-name">상호 <span class="set-hint">법인/사업자명</span></label>
+          <input id="set-biz-name" class="set-input" maxlength="60" placeholder="(주)맑음 에어케어">
+        </div>
+
+        <div class="set-field">
+          <label for="set-biz-ceo">대표자명</label>
+          <input id="set-biz-ceo" class="set-input" maxlength="40" placeholder="홍길동">
+        </div>
+
+        <div class="set-field">
+          <label for="set-biz-reg">사업자등록번호</label>
+          <input id="set-biz-reg" class="set-input" maxlength="40" placeholder="000-00-00000">
+        </div>
+
+        <div class="set-actions">
+          <button class="set-save" id="set-biz-save">저장</button>
+          <span class="set-saved" id="set-biz-saved" hidden>✓ 저장되었습니다</span>
+          <span class="set-error" id="set-biz-error" hidden></span>
+        </div>
+      </div>
     </section>
 
   </main>

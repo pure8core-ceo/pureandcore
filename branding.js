@@ -15,6 +15,12 @@
     link.href = href;
   }
 
+  function setText(sel, value) {
+    var v = (value || '').trim();
+    if (!v) return;
+    document.querySelectorAll(sel).forEach(function (el) { el.textContent = v; });
+  }
+
   function apply(s) {
     if (!s) return;
     var name = (s.brand_name || '').trim();
@@ -32,6 +38,11 @@
     if (sub) {
       document.querySelectorAll('.brand__sub').forEach(function (el) { el.textContent = sub; });
     }
+
+    // 푸터 사업자 정보 (상호 / 대표명 / 사업자등록번호)
+    setText('.footer__biz-name', s.biz_name);
+    setText('.footer__biz-ceo', s.biz_ceo);
+    setText('.footer__biz-reg', s.biz_reg_no);
     if (logo) {
       document.querySelectorAll('.brand').forEach(function (brand) {
         var dot = brand.querySelector('.brand__dot');

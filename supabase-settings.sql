@@ -34,5 +34,8 @@ create policy "site_settings admin update"
 insert into public.site_settings (key, value) values
   ('brand_name', '맑음'),
   ('brand_sub',  'air care'),
-  ('logo_url',   '')
+  ('logo_url',   ''),
+  ('biz_name',   '(주)맑음 에어케어'),
+  ('biz_ceo',    '000'),
+  ('biz_reg_no', '000-00-00000')
 on conflict (key) do nothing;

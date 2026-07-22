@@ -25,7 +25,11 @@
   let activeStatus = 'ALL';
   let searchTerm = '';
   const charts = {};
-  let settings = { brand_name: '맑음', brand_sub: 'air care', logo_url: '' };
+  const SETTINGS_DEFAULTS = {
+    brand_name: '맑음', brand_sub: 'air care', logo_url: '',
+    biz_name: '(주)맑음 에어케어', biz_ceo: '000', biz_reg_no: '000-00-00000'
+  };
+  let settings = { ...SETTINGS_DEFAULTS };
   let pendingLogo = ''; // 설정 폼에서 편집 중인 로고(data URL)
 
   // ---------- 유틸 ----------
@@ -495,7 +499,7 @@
       if (!res.error && res.data) {
         const map = {};
         res.data.forEach((r) => { map[r.key] = r.value; });
-        settings = Object.assign({ brand_name: '맑음', brand_sub: 'air care', logo_url: '' }, map);
+        settings = Object.assign({ ...SETTINGS_DEFAULTS }, map);
       }
     } catch (e) { /* 테이블 미생성 등 — 기본값 유지 */ }
     applyBrandChrome();
@@ -550,6 +554,14 @@
     subI.value = settings.brand_sub || '';
     pendingLogo = settings.logo_url || '';
     updateSettingsPreview();
+
+    // 사업자 정보 폼
+    const bizName = $('#set-biz-name');
+    if (bizName) {
+      bizName.value = settings.biz_name || '';
+      $('#set-biz-ceo').value = settings.biz_ceo || '';
+      $('#set-biz-reg').value = settings.biz_reg_no || '';
+    }
   }
 
   function updateSettingsPreview() {
@@ -640,6 +652,31 @@
     setTimeout(() => { savedEl.hidden = true; }, 1800);
   }
 
+  async function saveBizInfo() {
+    const btn = $('#set-biz-save');
+    const savedEl = $('#set-biz-saved');
+    const errEl = $('#set-biz-error');
+    savedEl.hidden = true; errEl.hidden = true;
+    btn.disabled = true; btn.textContent = '저장 중…';
+
+    const rows = [
+      { key: 'biz_name', value: ($('#set-biz-name').value || '').trim() },
+      { key: 'biz_ceo', value: ($('#set-biz-ceo').value || '').trim() },
+      { key: 'biz_reg_no', value: ($('#set-biz-reg').value || '').trim() }
+    ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+
+    const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });
+    btn.disabled = false; btn.textContent = '저장';
+    if (error) {
+      errEl.textContent = '저장 실패: ' + error.message;
+      errEl.hidden = false;
+      return;
+    }
+    rows.forEach((r) => { settings[r.key] = r.value; });
+    savedEl.hidden = false;
+    setTimeout(() => { savedEl.hidden = true; }, 1800);
+  }
+
   // =========================================================
   //  CSV 내보내기
   // =========================================================
@@ -693,6 +730,7 @@
     $('#set-logo-file').addEventListener('change', handleLogoFile);
     $('#set-logo-clear').addEventListener('click', () => { pendingLogo = ''; updateSettingsPreview(); });
     $('#set-save').addEventListener('click', saveSettings);
+    $('#set-biz-save').addEventListener('click', saveBizInfo);
     $('#drawer-backdrop').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
   }
