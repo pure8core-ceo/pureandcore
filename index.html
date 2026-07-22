@@ -404,6 +404,11 @@
               <label for="f-date">입주 예정일</label>
               <input id="f-date" name="movein" type="date">
             </div>
+            <!-- 스팸봇 트랩(허니팟): 사람에겐 보이지 않음. 값이 채워져 오면 봇으로 간주해 무시 -->
+            <div class="hp-field" aria-hidden="true">
+              <label for="hp-website">웹사이트</label>
+              <input id="hp-website" name="website" type="text" tabindex="-1" autocomplete="off">
+            </div>
             <button type="submit" class="form__submit">무료 측정 신청하기</button>
             <p class="form__fine">신청 시 개인정보 수집·이용에 동의하는 것으로 간주됩니다.</p>
           </form>

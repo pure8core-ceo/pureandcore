@@ -269,6 +269,14 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      // 스팸봇 허니팟: 숨은 필드가 채워졌으면 봇 → 저장하지 않고 성공한 척(재시도 유도 방지)
+      const hp = document.getElementById('hp-website');
+      if (hp && hp.value.trim() !== '') {
+        wrap.classList.add('is-submitted');
+        return;
+      }
+
       if (!form.checkValidity()) {
         form.reportValidity();
         return;

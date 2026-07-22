@@ -547,6 +547,8 @@ h1, h2 {
 }
 .contact-form-wrap { background: #fff; border-radius: var(--radius); padding: 34px; }
 .form { display: flex; flex-direction: column; gap: 14px; }
+/* 허니팟(스팸봇 트랩): 화면 밖으로 숨김 — display:none 은 일부 봇이 건너뛰므로 사용 안 함 */
+.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: 13px; font-weight: 700; color: var(--muted); }
 .field input {
