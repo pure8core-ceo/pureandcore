@@ -35,14 +35,18 @@ async function saveConsultation(data) {
       referrer: document.referrer || 'direct'
     };
 
-    // 데이터 병합
+    // 실제 테이블 컬럼만 담는다.
+    // (폼 필드명 area/movein/type/date 는 컬럼이 아니므로 spread 하지 않고 매핑만)
     const consultationData = {
-      ...data,
-      ...utmData,
+      name: data.name,
+      phone: data.phone,
+      address: data.address || null,
       property_type: data.type || '아파트',
-      size: data.area || data.size,
-      desired_date: data.movein || data.date,
-      status: 'NEW'
+      size: data.area || data.size || null,
+      desired_date: data.movein || data.date || null,
+      message: data.message || null,
+      status: 'NEW',
+      ...utmData
     };
 
     // Supabase에 저장
