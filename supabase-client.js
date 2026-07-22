@@ -40,10 +40,10 @@ async function saveConsultation(data) {
     const consultationData = {
       name: data.name,
       phone: data.phone,
-      address: data.address || null,
+      address: data.region || data.address || null,   // 지역
       property_type: data.type || '아파트',
-      size: data.area || data.size || null,
-      desired_date: data.movein || data.date || null,
+      size: data.size || data.area || null,            // 평형
+      desired_date: data.movein || data.date || null,  // 입주예정일 (YYYY-MM-DD)
       message: data.message || null,
       status: 'NEW',
       ...utmData

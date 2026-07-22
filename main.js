@@ -205,6 +205,14 @@
 
     initPhoneMask(document.getElementById('f-phone'));
 
+    // 입주 예정일: 오늘 이후만 선택 가능하도록 min 설정
+    const dateEl = document.getElementById('f-date');
+    if (dateEl) {
+      const t = new Date();
+      const iso = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+      dateEl.min = iso;
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!form.checkValidity()) {
@@ -227,8 +235,9 @@
       const payload = {
         name: val('f-name'),
         phone: val('f-phone'),
-        area: val('f-area'),     // supabase-client 에서 size 로 매핑
-        movein: val('f-date')    // supabase-client 에서 desired_date 로 매핑
+        size: val('f-size'),     // 평형 → size
+        region: val('f-region'), // 지역 → address
+        movein: val('f-date')    // 입주예정일 → desired_date (YYYY-MM-DD)
       };
 
       let ok = false;

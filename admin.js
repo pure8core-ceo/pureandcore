@@ -249,7 +249,7 @@
     return consultations.filter((c) => {
       if (activeStatus !== 'ALL' && c.status !== activeStatus) return false;
       if (term) {
-        const hay = `${c.name || ''} ${c.phone || ''} ${c.size || ''}`.toLowerCase();
+        const hay = `${c.name || ''} ${c.phone || ''} ${c.size || ''} ${c.address || ''}`.toLowerCase();
         if (!hay.includes(term)) return false;
       }
       return true;
@@ -265,7 +265,7 @@
         <td class="cell-sub">${fmtDateTime(c.created_at)}</td>
         <td class="cell-name">${esc(c.name)}</td>
         <td>${esc(c.phone)}</td>
-        <td>${esc(c.size || '-')}</td>
+        <td>${esc([c.size, c.address].filter(Boolean).join(' · ') || '-')}</td>
         <td>${esc(c.desired_date || '-')}</td>
         <td class="cell-sub">${esc(c.utm_source || 'direct')}</td>
         <td>${statusBadge(c.status)}</td>
@@ -343,9 +343,9 @@
         <button class="drawer__close" id="drawer-close">×</button>
       </div>
       ${row('연락처', phoneLink)}
-      ${row('평형/지역', esc(c.size || '-'))}
+      ${row('평형', esc(c.size || '-'))}
+      ${c.address ? row('지역', esc(c.address)) : ''}
       ${row('입주예정', esc(c.desired_date || '-'))}
-      ${c.address ? row('주소', esc(c.address)) : ''}
       ${c.message ? row('메시지', esc(c.message)) : ''}
       ${row('유입', `${esc(c.utm_source || 'direct')} / ${esc(c.utm_medium || 'none')}`)}
       ${c.utm_campaign && c.utm_campaign !== 'none' ? row('캠페인', esc(c.utm_campaign)) : ''}
@@ -488,7 +488,7 @@
     if (!rows.length) { alert('내보낼 데이터가 없습니다.'); return; }
     const cols = [
       ['created_at', '접수일'], ['name', '이름'], ['phone', '연락처'],
-      ['size', '평형/지역'], ['desired_date', '입주예정'], ['status', '상태'],
+      ['size', '평형'], ['address', '지역'], ['desired_date', '입주예정'], ['status', '상태'],
       ['assigned_to', '담당자'], ['utm_source', '유입경로'], ['utm_medium', '매체'],
       ['notes', '메모']
     ];

@@ -392,13 +392,17 @@
             </div>
             <div class="field-row">
               <div class="field">
-                <label for="f-area">평형 / 지역</label>
-                <input id="f-area" name="area" placeholder="예) 32평 · 마포구">
+                <label for="f-size">평형</label>
+                <input id="f-size" name="size" inputmode="numeric" maxlength="10" placeholder="예) 32평">
               </div>
               <div class="field">
-                <label for="f-date">입주 예정일</label>
-                <input id="f-date" name="movein" placeholder="예) 8월 중순">
+                <label for="f-region">지역</label>
+                <input id="f-region" name="region" maxlength="40" placeholder="예) 마포구">
               </div>
+            </div>
+            <div class="field">
+              <label for="f-date">입주 예정일</label>
+              <input id="f-date" name="movein" type="date">
             </div>
             <button type="submit" class="form__submit">무료 측정 신청하기</button>
             <p class="form__fine">신청 시 개인정보 수집·이용에 동의하는 것으로 간주됩니다.</p>

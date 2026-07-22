@@ -549,6 +549,8 @@ h1, h2 {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
+.field input[type="date"] { color: var(--ink); min-height: 49px; }
+.field input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .55; }
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
 .form__submit {
